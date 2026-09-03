@@ -1,0 +1,46 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {spawn}=require('node:child_process');
+const fs=require('node:fs');
+const os=require('node:os');
+const path=require('node:path');
+test('Oturum, yetki, formlar, görüşmeler, Excel ve kalıcılık',async()=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'rehberlik-test-'));
+  let child,base;
+  async function start(){child=spawn(process.execPath,['server.cjs'],{cwd:__dirname,env:{...process.env,DATA_DIR:dir,PORT:'0'},stdio:['ignore','pipe','pipe']});base=await new Promise((resolve,reject)=>{let out='';child.stdout.on('data',b=>{out+=b;const m=out.match(/http:\/\/localhost:(\d+)/);if(m)resolve(`http://127.0.0.1:${m[1]}`);});child.on('error',reject);child.on('exit',code=>reject(new Error('Server exited: '+code)));});}
+  async function stop(){if(child.exitCode===null)await new Promise(resolve=>{child.once('exit',resolve);child.kill();});}
+  async function request(route,method='GET',body,cookie){const r=await fetch(base+route,{method,headers:{...(body?{'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:body?JSON.stringify(body):undefined});const bytes=Buffer.from(await r.arrayBuffer());return {status:r.status,cookie:r.headers.get('set-cookie')?.split(';')[0],data:r.headers.get('content-type')?.includes('json')?JSON.parse(bytes):bytes};}
+  try{
+    await start();
+    assert.equal((await request('/api/data')).status,401);
+    assert.equal((await request('/api/login','POST',{username:'ilaydahisarbeyli',password:'wrong'})).status,401);
+    const guest=(await request('/api/login','POST',{guest:true})).cookie;
+    const editor=(await request('/api/login','POST',{username:'ilaydahisarbeyli',password:'123456'})).cookie;
+    const d=(await request('/api/data','GET',null,guest)).data;
+    assert.equal(d.classes.length,6);assert.equal(d.students.length,60);for(const c of d.classes)assert.equal(d.students.filter(s=>s.classId===c.id).length,10);
+    assert.equal('meetings' in d,false);
+    const sid=d.students[0].id;
+    assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,guest)).status,403);
+    const profile={birthDate:'2023-04-03',gender:'Kız',parentName:'Örnek Veli',phone:'555 000 00 00'};
+    assert.equal((await request('/api/students/'+sid,'PUT',profile,guest)).status,403);
+    assert.equal((await request('/api/students/'+sid,'PUT',profile,editor)).status,200);
+    assert.equal((await request('/api/students/'+sid,'PUT',{...profile,birthDate:'2023-02-31'},editor)).status,400);
+    for(const kind of ['observation','parent'])assert.equal((await request('/api/records','POST',{studentId:sid,kind,teacher:d.teachers[0],day:'1. Gün',date:'2026-09-03',type:'Genel Bilgi',note:'=Örnek & <metin>\nİkinci satır'},guest)).status,201);
+    const ids=[];
+    for(const kind of ['student','parent']){
+      const m={studentId:sid,kind,date:'2026-09-03',participant:'Örnek Katılımcı',subject:'Takip',note:'GİZLİ görüşme notu'};
+      assert.equal((await request('/api/meetings','POST',m,guest)).status,403);
+      const created=await request('/api/meetings','POST',m,editor);assert.equal(created.status,201);ids.push(created.data.id);
+    }
+    assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,editor)).data.length,2);
+    assert.equal((await request('/api/meetings/'+ids[0],'DELETE',{},guest)).status,403);
+    assert.equal((await request('/api/meetings/'+ids[0],'DELETE',{},editor)).status,200);
+    const exported=await request('/api/export','GET',null,guest);assert.equal(exported.status,200);assert.equal(exported.data.readUInt32LE(0),0x04034b50);assert.ok(exported.data.includes(Buffer.from('=Örnek &amp; &lt;metin&gt;')));assert.ok(!exported.data.includes(Buffer.from('GİZLİ')));
+    assert.equal((await request('/data/rehberlik.sqlite')).status,404);assert.equal((await request('/server.cjs')).status,404);
+    const publicData=JSON.stringify((await request('/api/data','GET',null,guest)).data);assert.ok(!publicData.includes('GİZLİ'));
+    await request('/api/logout','POST',{},editor);assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,editor)).status,401);
+    await stop();await start();
+    const again=(await request('/api/login','POST',{username:'ilaydahisarbeyli',password:'123456'})).cookie;
+    const saved=(await request('/api/data','GET',null,again)).data;assert.equal(saved.records.length,2);assert.equal(saved.students[0].parentName,'Örnek Veli');assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,again)).data.length,1);
+  }finally{if(child)await stop();fs.rmSync(dir,{recursive:true,force:true});}
+});

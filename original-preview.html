@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rehberlik Öğrenci Takip Platformu</title>
+  <style>
+    :root{
+      --bg:#f4f7fb;
+      --panel:#ffffff;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --primary:#3459d1;
+      --primary-soft:#eef2ff;
+      --success:#15803d;
+      --danger:#b91c1c;
+      --shadow:0 12px 30px rgba(15,23,42,.08);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    .app{min-height:100vh;display:grid;grid-template-columns:260px 1fr}
+    .sidebar{
+      background:#111827;
+      color:#fff;
+      padding:24px 18px;
+      position:sticky;
+      top:0;
+      height:100vh;
+    }
+    .brand{display:flex;gap:12px;align-items:center;margin-bottom:28px}
+    .brand-badge{
+      width:42px;height:42px;border-radius:12px;background:#fff;color:#111827;
+      display:grid;place-items:center;font-weight:800;
+    }
+    .brand h1{font-size:15px;margin:0;line-height:1.3}
+    .brand span{font-size:12px;color:#9ca3af}
+    .nav{display:grid;gap:8px}
+    .nav button{
+      width:100%;border:0;background:transparent;color:#d1d5db;
+      text-align:left;padding:12px 14px;border-radius:12px;
+    }
+    .nav button:hover,.nav button.active{background:#1f2937;color:#fff}
+    .sidebar-note{
+      position:absolute;bottom:18px;left:18px;right:18px;
+      padding:14px;border-radius:14px;background:#1f2937;color:#9ca3af;font-size:12px;line-height:1.5;
+    }
+    .main{padding:30px;min-width:0}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:26px}
+    .topbar h2{margin:0;font-size:28px}
+    .topbar p{margin:6px 0 0;color:var(--muted)}
+    .teacher-pill{background:var(--panel);border:1px solid var(--line);padding:10px 14px;border-radius:999px;font-size:13px}
+    .grid{display:grid;gap:18px}
+    .class-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .card{
+      background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .class-card{padding:20px;transition:.18s ease;cursor:pointer}
+    .class-card:hover{transform:translateY(-2px);border-color:#c7d2fe}
+    .class-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .class-icon{width:48px;height:48px;border-radius:14px;background:var(--primary-soft);display:grid;place-items:center;font-size:22px}
+    .class-card h3{margin:14px 0 4px;font-size:18px}
+    .class-card p{margin:0;color:var(--muted);font-size:14px}
+    .count{font-size:12px;background:#f3f4f6;padding:6px 9px;border-radius:999px;color:#374151}
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px}
+    .input,.select,.textarea{
+      width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;color:var(--text);outline:none;
+    }
+    .input:focus,.select:focus,.textarea:focus{border-color:#818cf8;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+    .search{max-width:360px}
+    .btn{
+      border:0;border-radius:12px;padding:11px 15px;font-weight:650;
+      background:var(--primary);color:white;
+    }
+    .btn.secondary{background:white;color:var(--text);border:1px solid var(--line)}
+    .btn.success{background:var(--success)}
+    .btn.danger{background:var(--danger)}
+    .students-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .student-card{padding:18px;cursor:pointer}
+    .student-card:hover{border-color:#c7d2fe}
+    .avatar{
+      width:52px;height:52px;border-radius:50%;background:#eef2ff;color:#3730a3;
+      display:grid;place-items:center;font-weight:800;font-size:17px;margin-bottom:12px;
+    }
+    .student-card h4{margin:0 0 4px}
+    .student-card small{color:var(--muted)}
+    .profile-layout{display:grid;grid-template-columns:320px 1fr;gap:20px}
+    .profile-card{padding:22px;height:max-content}
+    .profile-avatar{
+      width:88px;height:88px;border-radius:24px;background:#eef2ff;color:#3730a3;
+      display:grid;place-items:center;font-weight:800;font-size:28px;margin-bottom:18px;
+    }
+    .meta{display:grid;gap:10px;margin-top:18px}
+    .meta-row{padding:10px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;font-size:14px}
+    .muted{color:var(--muted)}
+    .section{padding:22px}
+    .section h3{margin:0 0 16px}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .form-group{display:grid;gap:7px}
+    .form-group.full{grid-column:1/-1}
+    .form-group label{font-size:13px;font-weight:650}
+    .textarea{min-height:130px;resize:vertical}
+    .evaluation-list{display:grid;gap:12px}
+    .evaluation{
+      border:1px solid var(--line);border-radius:14px;padding:14px;background:#fafafa;
+    }
+    .evaluation-head{display:flex;justify-content:space-between;gap:12px;margin-bottom:7px}
+    .evaluation-head strong{font-size:14px}
+    .evaluation-head span{font-size:12px;color:var(--muted)}
+    .evaluation p{margin:0;line-height:1.55}
+    .empty{padding:24px;text-align:center;border:1px dashed #cbd5e1;border-radius:14px;color:var(--muted)}
+    .table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:16px}
+    table{width:100%;border-collapse:collapse;min-width:900px}
+    th,td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}
+    th{background:#f8fafc;color:#475569;position:sticky;top:0}
+    tr:last-child td{border-bottom:0}
+    .stats{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:20px}
+    .stat{padding:18px}
+    .stat strong{font-size:27px;display:block;margin-bottom:3px}
+    .stat span{color:var(--muted);font-size:13px}
+    .back{display:inline-flex;align-items:center;gap:7px;margin-bottom:16px;color:#475569;background:transparent;border:0;padding:0}
+    .toast{
+      position:fixed;right:24px;bottom:24px;background:#111827;color:white;
+      border-radius:12px;padding:12px 16px;box-shadow:var(--shadow);display:none;z-index:30;
+    }
+    @media(max-width:1050px){
+      .class-grid{grid-template-columns:repeat(2,1fr)}
+      .students-grid{grid-template-columns:repeat(3,1fr)}
+      .profile-layout{grid-template-columns:1fr}
+      .stats{grid-template-columns:repeat(2,1fr)}
+    }
+    @media(max-width:760px){
+      .app{grid-template-columns:1fr}
+      .sidebar{height:auto;position:relative;padding:16px}
+      .sidebar-note{display:none}
+      .nav{grid-template-columns:1fr 1fr}
+      .main{padding:18px}
+      .topbar{align-items:flex-start;flex-direction:column}
+      .class-grid,.students-grid,.stats{grid-template-columns:1fr}
+      .form-grid{grid-template-columns:1fr}
+    }
+    @media print{
+      .sidebar,.topbar,.toolbar,.back,.btn{display:none!important}
+      .app{display:block}
+      .main{padding:0}
+      body{background:white}
+      .card,.table-wrap{box-shadow:none;border:0}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-badge">R</div>
+        <div>
+          <h1>Rehberlik Platformu</h1>
+          <span>Öğrenci Takip Sistemi</span>
+        </div>
+      </div>
+      <div class="nav">
+        <button id="navClasses" class="active" onclick="showClasses()">Sınıflar</button>
+        <button id="navEvaluations" onclick="showEvaluations()">Tüm Değerlendirmeler</button>
+      </div>
+      <div class="sidebar-note">
+        Bu prototipte kayıtlar yalnızca bu tarayıcıda saklanır. Gerçek kullanımda veriler güvenli bir veritabanına bağlanmalıdır.
+      </div>
+    </aside>
+
+    <main class="main">
+      <div id="appContent"></div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const classes = [
+  { id:'ana3', name:'Anasınıfı 3 Yaş', students:[
+    'Ada Yılmaz','Aras Demir','Defne Kaya','Ege Aydın','Lina Şahin',
+    'Mert Arslan','Mira Çelik','Poyraz Koç','Selin Aksoy','Uras Yalçın'
+  ]},
+  { id:'ana4', name:'Anasınıfı 4 Yaş', students:[
+    'Alin Korkmaz','Atlas Özkan','Duru Karaca','Emir Eren','İpek Güneş',
+    'Kerem Aslan','Lara Polat','Mete Yıldız','Nehir Acar','Rüzgar Kurt'
+  ]},
+  { id:'ana5', name:'Anasınıfı 5 Yaş', students:[
+    'Alya Keskin','Bora Kılıç','Ceren Tunç','Deniz Çetin','Ela Toprak',
+    'Eren Doğan','İdil Yıldırım','Kuzey Bulut','Melis Ergin','Toprak Yavuz'
+  ]},
+  { id:'1a', name:'1-A', students:[
+    'Ahmet Can Öz','Ayşe Lina Er','Beren Akın','Emir Alp Tekin','Eylül Naz Arı',
+    'Kaan Mert Işık','Leyla Su Kaya','Mina Ece Ata','Ömer Arda Aksu','Zeynep Ela Uçar'
+  ]},
+  { id:'1b', name:'1-B', students:[
+    'Ali Efe Kurt','Asya Nur Gül','Derin Su Öz','Ege Mete Alp','Elif Ada Dinç',
+    'İrem Naz Sönmez','Mehmet Aras Şen','Nil Kara','Sarp Demirci','Yağmur Elif Ak'
+  ]},
+  { id:'1c', name:'1-C', students:[
+    'Arda Efe Boz','Azra Lina Çakır','Bartu Can Tunç','Cemre Su Erdem','Deniz Alp Kılıç',
+    'Ece Naz Kaya','Eren Mert Çetin','Lina Su Aydın','Mert Ege Koç','Zeynep Derin Arslan'
+  ]}
+];
+
+const teachers = [
+  'İlayda Hisarbeyli',
+  'Ayşe Kaya',
+  'Burcu Demir',
+  'Emre Yıldız',
+  'Merve Çelik',
+  'Selin Arslan'
+];
+
+let currentClassId = null;
+let currentStudent = null;
+
+function getEvaluations(){
+  return JSON.parse(localStorage.getItem('rehberlik_evaluations') || '[]');
+}
+function setEvaluations(data){
+  localStorage.setItem('rehberlik_evaluations', JSON.stringify(data));
+}
+function initials(name){
+  return name.split(' ').slice(0,2).map(x=>x[0]).join('').toUpperCase();
+}
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.style.display='block';
+  setTimeout(()=>el.style.display='none',2200);
+}
+function setActiveNav(name){
+  document.getElementById('navClasses').classList.toggle('active', name==='classes');
+  document.getElementById('navEvaluations').classList.toggle('active', name==='evals');
+}
+function topbar(title, subtitle){
+  return `<div class="topbar">
+    <div><h2>${title}</h2><p>${subtitle}</p></div>
+    <div class="teacher-pill">Rehberlik Birimi</div>
+  </div>`;
+}
+
+function showClasses(){
+  setActiveNav('classes');
+  currentClassId=null; currentStudent=null;
+  const total=classes.reduce((s,c)=>s+c.students.length,0);
+  document.getElementById('appContent').innerHTML = `
+    ${topbar('Sınıflar','Öğrenci profillerine ulaşmak için bir sınıf seçin.')}
+    <div class="grid stats">
+      <div class="card stat"><strong>${classes.length}</strong><span>Toplam sınıf</span></div>
+      <div class="card stat"><strong>${total}</strong><span>Toplam öğrenci</span></div>
+      <div class="card stat"><strong>${teachers.length}</strong><span>Tanımlı öğretmen</span></div>
+      <div class="card stat"><strong>${getEvaluations().length}</strong><span>Toplam değerlendirme</span></div>
+    </div>
+    <div class="grid class-grid">
+      ${classes.map(c=>`
+        <div class="card class-card" onclick="showClass('${c.id}')">
+          <div class="class-top">
+            <div class="class-icon">🎒</div>
+            <span class="count">${c.students.length} öğrenci</span>
+          </div>
+          <h3>${c.name}</h3>
+          <p>Öğrenci profillerini görüntüle</p>
+        </div>`).join('')}
+    </div>
+  `;
+}
+
+function showClass(id){
+  setActiveNav('classes');
+  currentClassId=id;
+  const c=classes.find(x=>x.id===id);
+  document.getElementById('appContent').innerHTML = `
+    <button class="back" onclick="showClasses()">← Sınıflara dön</button>
+    ${topbar(c.name,`${c.students.length} öğrenci`)}
+    <div class="toolbar">
+      <input id="studentSearch" class="input search" placeholder="Öğrenci ara..." oninput="filterStudents()">
+    </div>
+    <div id="studentsGrid" class="grid students-grid">
+      ${renderStudentCards(c)}
+    </div>
+  `;
+}
+function renderStudentCards(c, query=''){
+  return c.students
+    .filter(s=>s.toLocaleLowerCase('tr').includes(query.toLocaleLowerCase('tr')))
+    .map((s,i)=>`
+      <div class="card student-card" onclick="showStudent('${c.id}', ${c.students.indexOf(s)})">
+        <div class="avatar">${initials(s)}</div>
+        <h4>${s}</h4>
+        <small>${c.name} · Öğrenci Profili</small>
+      </div>`).join('');
+}
+function filterStudents(){
+  const c=classes.find(x=>x.id===currentClassId);
+  const q=document.getElementById('studentSearch').value;
+  document.getElementById('studentsGrid').innerHTML = renderStudentCards(c,q) || `<div class="empty">Öğrenci bulunamadı.</div>`;
+}
+
+function showStudent(classId, studentIndex){
+  const c=classes.find(x=>x.id===classId);
+  const s=c.students[studentIndex];
+  currentClassId=classId; currentStudent=s;
+  const all=getEvaluations().filter(e=>e.classId===classId && e.student===s)
+    .sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+
+  document.getElementById('appContent').innerHTML = `
+    <button class="back" onclick="showClass('${classId}')">← ${c.name} sınıfına dön</button>
+    ${topbar('Öğrenci Profili','Öğrenciye ait değerlendirmeleri görüntüleyin ve yeni kayıt ekleyin.')}
+    <div class="profile-layout">
+      <div class="card profile-card">
+        <div class="profile-avatar">${initials(s)}</div>
+        <h2 style="margin:0">${s}</h2>
+        <p class="muted" style="margin:6px 0 0">${c.name}</p>
+        <div class="meta">
+          <div class="meta-row"><span class="muted">Sınıf</span><strong>${c.name}</strong></div>
+          <div class="meta-row"><span class="muted">Değerlendirme</span><strong>${all.length}</strong></div>
+          <div class="meta-row"><span class="muted">Durum</span><strong>Aktif</strong></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <section class="card section">
+          <h3>Yeni Değerlendirme Ekle</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Öğretmen</label>
+              <select id="teacher" class="select">
+                <option value="">Öğretmen seçin</option>
+                ${teachers.map(t=>`<option>${t}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Gün</label>
+              <select id="day" class="select">
+                <option value="">Gün seçin</option>
+                ${Array.from({length:10},(_,i)=>`<option>${i+1}. Gün</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tarih</label>
+              <input id="date" class="input" type="date" value="${new Date().toISOString().slice(0,10)}">
+            </div>
+            <div class="form-group">
+              <label>Değerlendirme Türü</label>
+              <select id="type" class="select">
+                <option>Genel Gözlem</option>
+                <option>Akademik</option>
+                <option>Sosyal-Duygusal</option>
+                <option>Davranış</option>
+                <option>Uyum Süreci</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label>Değerlendirme</label>
+              <textarea id="note" class="textarea" placeholder="Öğrenciyle ilgili değerlendirmenizi yazın..."></textarea>
+            </div>
+            <div class="form-group full">
+              <button class="btn success" onclick="saveEvaluation()">Değerlendirmeyi Kaydet</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card section">
+          <h3>Geçmiş Değerlendirmeler</h3>
+          <div class="evaluation-list">
+            ${all.length ? all.map(e=>`
+              <div class="evaluation">
+                <div class="evaluation-head">
+                  <strong>${e.teacher} · ${e.type}</strong>
+                  <span>${e.day} · ${formatDate(e.date)}</span>
+                </div>
+                <p>${escapeHtml(e.note)}</p>
+              </div>`).join('') : `<div class="empty">Henüz değerlendirme girilmemiş.</div>`}
+          </div>
+        </section>
+      </div>
+    </div>
+  `;
+}
+
+function saveEvaluation(){
+  const teacher=document.getElementById('teacher').value;
+  const day=document.getElementById('day').value;
+  const date=document.getElementById('date').value;
+  const type=document.getElementById('type').value;
+  const note=document.getElementById('note').value.trim();
+  if(!teacher || !day || !date || !note){
+    toast('Lütfen öğretmen, gün, tarih ve değerlendirme alanlarını doldurun.');
+    return;
+  }
+  const c=classes.find(x=>x.id===currentClassId);
+  const data=getEvaluations();
+  data.push({
+    id: Date.now(),
+    classId: currentClassId,
+    className: c.name,
+    student: currentStudent,
+    teacher, day, date, type, note,
+    createdAt:new Date().toISOString()
+  });
+  setEvaluations(data);
+  toast('Değerlendirme kaydedildi.');
+  showStudent(currentClassId, c.students.indexOf(currentStudent));
+}
+
+function showEvaluations(){
+  setActiveNav('evals');
+  const data=getEvaluations().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  document.getElementById('appContent').innerHTML = `
+    ${topbar('Tüm Değerlendirmeler','Tüm sınıflardaki kayıtları tek merkezden görüntüleyin, filtreleyin ve dışa aktarın.')}
+    <div class="toolbar">
+      <select id="filterClass" class="select" style="max-width:220px" onchange="renderEvaluationTable()">
+        <option value="">Tüm sınıflar</option>
+        ${classes.map(c=>`<option value="${c.name}">${c.name}</option>`).join('')}
+      </select>
+      <select id="filterTeacher" class="select" style="max-width:220px" onchange="renderEvaluationTable()">
+        <option value="">Tüm öğretmenler</option>
+        ${teachers.map(t=>`<option>${t}</option>`).join('')}
+      </select>
+      <input id="filterSearch" class="input search" placeholder="Öğrenci veya metin ara..." oninput="renderEvaluationTable()">
+      <button class="btn secondary" onclick="exportCSV()">Excel / CSV İndir</button>
+      <button class="btn secondary" onclick="window.print()">Yazdır</button>
+    </div>
+    <div id="evaluationTable"></div>
+  `;
+  renderEvaluationTable();
+}
+
+function filteredEvaluations(){
+  const classEl=document.getElementById('filterClass');
+  const teacherEl=document.getElementById('filterTeacher');
+  const searchEl=document.getElementById('filterSearch');
+  const cls=classEl?classEl.value:'';
+  const tea=teacherEl?teacherEl.value:'';
+  const q=searchEl?searchEl.value.toLocaleLowerCase('tr'):'';
+  return getEvaluations()
+    .filter(e=>!cls || e.className===cls)
+    .filter(e=>!tea || e.teacher===tea)
+    .filter(e=>!q || `${e.student} ${e.note} ${e.type}`.toLocaleLowerCase('tr').includes(q))
+    .sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+}
+
+function renderEvaluationTable(){
+  const data=filteredEvaluations();
+  const el=document.getElementById('evaluationTable');
+  if(!data.length){
+    el.innerHTML=`<div class="empty">Filtreye uygun değerlendirme bulunamadı.</div>`;
+    return;
+  }
+  el.innerHTML=`
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Sınıf</th><th>Öğrenci</th><th>Öğretmen</th><th>Gün</th><th>Tarih</th><th>Tür</th><th>Değerlendirme</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(e=>`
+            <tr>
+              <td>${e.className}</td>
+              <td><strong>${e.student}</strong></td>
+              <td>${e.teacher}</td>
+              <td>${e.day}</td>
+              <td>${formatDate(e.date)}</td>
+              <td>${e.type}</td>
+              <td>${escapeHtml(e.note)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function exportCSV(){
+  const data=filteredEvaluations();
+  if(!data.length){toast('Dışa aktarılacak kayıt yok.');return;}
+  const rows=[
+    ['Sınıf','Öğrenci','Öğretmen','Gün','Tarih','Tür','Değerlendirme'],
+    ...data.map(e=>[e.className,e.student,e.teacher,e.day,e.date,e.type,e.note])
+  ];
+  const csv='\uFEFF'+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='rehberlik_degerlendirmeleri.csv';a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV dosyası hazırlandı.');
+}
+function formatDate(d){
+  if(!d) return '';
+  return new Date(d+'T00:00:00').toLocaleDateString('tr-TR');
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+showClasses();
+</script>
+</body>
+</html>
