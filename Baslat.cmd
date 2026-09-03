@@ -1,4 +1,4 @@
 @echo off
 cd /d "%~dp0"
-node server.cjs
+node --env-file-if-exists=.env server/local.cjs
 pause

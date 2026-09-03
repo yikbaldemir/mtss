@@ -4,10 +4,10 @@ const {spawn}=require('node:child_process');
 const fs=require('node:fs');
 const os=require('node:os');
 const path=require('node:path');
-test('Oturum, yetki, formlar, görüşmeler, Excel ve kalıcılık',async()=>{
+for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + ': Oturum, yetki, formlar, görüşmeler, Excel ve kalıcılık',async()=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'rehberlik-test-'));
   let child,base;
-  async function start(){child=spawn(process.execPath,['server.cjs'],{cwd:__dirname,env:{...process.env,DATA_DIR:dir,PORT:'0'},stdio:['ignore','pipe','pipe']});base=await new Promise((resolve,reject)=>{let out='';child.stdout.on('data',b=>{out+=b;const m=out.match(/http:\/\/localhost:(\d+)/);if(m)resolve(`http://127.0.0.1:${m[1]}`);});child.on('error',reject);child.on('exit',code=>reject(new Error('Server exited: '+code)));});}
+  async function start(){child=spawn(process.execPath,[entry],{cwd:__dirname,env:{...process.env,DATA_DIR:dir,PORT:'0',VERCEL:'',TURSO_DATABASE_URL:'',TURSO_AUTH_TOKEN:'',EDITOR_PASSWORD:'123456'},stdio:['ignore','pipe','pipe']});base=await new Promise((resolve,reject)=>{let out='';child.stdout.on('data',b=>{out+=b;const m=out.match(/http:\/\/localhost:(\d+)/);if(m)resolve(`http://127.0.0.1:${m[1]}`);});child.on('error',reject);child.on('exit',code=>reject(new Error('Server exited: '+code)));});}
   async function stop(){if(child.exitCode===null)await new Promise(resolve=>{child.once('exit',resolve);child.kill();});}
   async function request(route,method='GET',body,cookie){const r=await fetch(base+route,{method,headers:{...(body?{'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:body?JSON.stringify(body):undefined});const bytes=Buffer.from(await r.arrayBuffer());return {status:r.status,cookie:r.headers.get('set-cookie')?.split(';')[0],data:r.headers.get('content-type')?.includes('json')?JSON.parse(bytes):bytes};}
   try{
@@ -40,7 +40,10 @@ test('Oturum, yetki, formlar, görüşmeler, Excel ve kalıcılık',async()=>{
     const publicData=JSON.stringify((await request('/api/data','GET',null,guest)).data);assert.ok(!publicData.includes('GİZLİ'));
     await request('/api/logout','POST',{},editor);assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,editor)).status,401);
     await stop();await start();
+    assert.equal((await request('/api/session','GET',null,guest)).data.role,'guest');
+    assert.equal((await request('/api/session','GET',null,editor)).data.role,null);
     const again=(await request('/api/login','POST',{username:'ilaydahisarbeyli',password:'123456'})).cookie;
     const saved=(await request('/api/data','GET',null,again)).data;assert.equal(saved.records.length,2);assert.equal(saved.students[0].parentName,'Örnek Veli');assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,again)).data.length,1);
   }finally{if(child)await stop();fs.rmSync(dir,{recursive:true,force:true});}
 });
+
