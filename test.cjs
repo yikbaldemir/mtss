@@ -18,7 +18,7 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     const editor=(await request('/api/login','POST',{username:'ilaydahisarbeyli',password:'123456'})).cookie;
     const schools=(await request('/api/schools','GET',null,guest)).data;
     assert.deepEqual(schools.map(s=>[s.id,s.classCount]),[['nazmi',12],['atagen',8]]);
-    assert.equal((await request('/api/data','GET',null,guest)).status,400);
+    assert.equal((await request('/api/data','GET',null,guest)).data.school.id,'nazmi');
     const d=(await request('/api/data?schoolId=nazmi','GET',null,guest)).data;
     const atagen=(await request('/api/data?schoolId=atagen','GET',null,guest)).data;
     assert.equal(d.school.id,'nazmi');assert.equal(d.classes.length,12);assert.equal(d.students.length,120);

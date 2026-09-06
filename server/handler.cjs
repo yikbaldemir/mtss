@@ -127,7 +127,8 @@ async function handler(req, res) {
       return json(res, 200, schools.map(item => ({ ...item, classCount: schoolClasses(item.id).length })));
     }
     if (route === '/api/data' && req.method === 'GET') {
-      const school = selectedSchool(url.searchParams.get('schoolId'));
+      // Keep already-open browser tabs working while a new frontend deployment rolls out.
+      const school = selectedSchool(url.searchParams.get('schoolId') || schools[0].id);
       const visibleClasses = schoolClasses(school.id);
       return json(res, 200, { school, classes: visibleClasses.map(({ id, name }) => ({ id, name })), teachers, students: await schoolStudents(db, school.id), records: await records(db, school.id) });
     }
@@ -169,7 +170,7 @@ async function handler(req, res) {
       return json(res, 200, { ok: true });
     }
     if (route === '/api/export' && req.method === 'GET') {
-      const school = selectedSchool(url.searchParams.get('schoolId'));
+      const school = selectedSchool(url.searchParams.get('schoolId') || schools[0].id);
       const rows = (await records(db, school.id)).filter(r => (!url.searchParams.get('classId') || r.classId === url.searchParams.get('classId')) && (!url.searchParams.get('teacher') || r.teacher === url.searchParams.get('teacher')) && (!url.searchParams.get('q') || `${r.student} ${r.note} ${r.type}`.toLocaleLowerCase('tr').includes(url.searchParams.get('q').toLocaleLowerCase('tr'))));
       const bytes = workbook([['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Gün', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, r.kind === 'parent' ? 'Veli bilgi formu' : 'Öğretmen gözlem formu', r.teacher, r.day, r.date, r.type, r.note])]);
       res.writeHead(200, { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': 'attachment; filename="rehberlik-kayitlari.xlsx"' });
