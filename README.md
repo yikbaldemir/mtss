@@ -13,14 +13,21 @@ npm start
 
 http://localhost:3000 adresini açın. `Baslat.cmd` de aynı uygulamayı başlatır. Ortam değişkenleri tanımlı değilse mevcut `data/rehberlik.sqlite` dosyası kullanılır; yerel kayıtlar silinmez. HTML dosyasını çift tıklamak sunucuyu başlatmaz.
 
-Düzenleyici: `ilaydahisarbeyli`. Boş veritabanı için ilk şifre: `123456`. `EDITOR_PASSWORD` yalnızca ilk hesap oluşturulurken kullanılır; mevcut hesabın şifresini değiştirmez.
+Düzenleyici hesapları ve erişimleri:
+
+- `ilaydahisarbeyli`: Her iki okul ve tüm kademeler.
+- `tugbasaygi`: Yalnızca Kağıthane Nazmi Arıkan İlkokulunda Fen Bilimleri, anaokulu kademesi.
+- `kubrakaban`: Yalnızca Kağıthane Nazmi Arıkan İlkokulunda Fen Bilimleri, 1. ve 2. sınıflar.
+- `selinak`: Yalnızca Kağıthane Nazmi Arıkan İlkokulunda Fen Bilimleri, 3. ve 4. sınıflar.
+
+Boş veritabanında İlayda hesabının ilk şifresi `123456` olur. İlk kurulum şifreleri `EDITOR_PASSWORD`, `TUGBA_EDITOR_PASSWORD`, `KUBRA_EDITOR_PASSWORD` ve `SELIN_EDITOR_PASSWORD` ortam değişkenleriyle değiştirilebilir. Bu değişkenler yalnızca veritabanında henüz bulunmayan hesabı oluştururken kullanılır; mevcut hesabın şifresini değiştirmez.
 
 ## Vercel'e dağıtım
 
 1. Bu proje yapısının tamamını Git deposuna gönderin. Eski dağıtımdaki kök `app.cjs` ve eski `builds`/yönlendirme ayarlarını taşımayın. Tarayıcı kodu yalnızca `public/app.js` dosyasındadır.
 2. Vercel projesinde Root Directory, bu `package.json` ve `vercel.json` dosyalarının olduğu klasör olsun. Framework Preset: **Other**, Node.js: **24.x**. Build Command: `npm run build`, Output Directory: `public` (ikisi de `vercel.json` içinde tanımlıdır). Eski dashboard komut override'larını kaldırın.
 3. Kalıcı bir Turso veritabanı oluşturun. Vercel Settings → Environment Variables bölümüne `TURSO_DATABASE_URL` ve `TURSO_AUTH_TOKEN` ekleyin. URL `libsql://...` veya `https://...` biçiminde olmalıdır. Değerleri ihtiyaç duyulan Production/Preview ortamlarına tanımlayın; öğrenci kayıtlarını ayırmak için Preview'da ayrı veritabanı kullanın. Anahtarları Git'e veya tarayıcı dosyalarına koymayın.
-4. İlk düzenleyici şifresini değiştirmek isterseniz ilk çalıştırmadan önce `EDITOR_PASSWORD` tanımlayın. Tanımlanmazsa istenen `123456` şifresi kullanılır.
+4. İlk düzenleyici şifrelerini değiştirmek isterseniz ilk çalıştırmadan önce `.env.example` içinde belirtilen dört şifre değişkenini tanımlayın. Bu ayarlar veritabanında daha önce oluşturulmuş hesapların şifrelerini değiştirmez.
 5. Yeniden deploy edin; eski build cache'ini kullanmadan dağıtın. Ana sayfa, `/app.js` ve `/api/session` yanıtlarını kontrol edin. İlk API isteği tabloları ve örnek öğrencileri bir kez oluşturur.
 
 **Kalıcı veritabanı bağlantısı zorunludur.** Vercel dosya sistemi SQLite kayıtları için kalıcı/paylaşılan depolama sağlamaz. Geçici `/tmp` veritabanı kullanmak kayıtları ve oturumları kaybettirir; bu uygulama böyle bir geri dönüş yapmaz. Bağlantı değişkenleri eksikse statik giriş ekranı açılır, API yapılandırma açıklamasıyla `503` döndürür. Bu, çalışan bir dağıtım olarak değerlendirilmemelidir; iki bağlantı değişkenini tanımlayıp yeniden deploy etmek gerekir.
@@ -43,7 +50,7 @@ Yerel veritabanınız otomatik olarak internete yüklenmez. Vercel'deki veritaba
 
 Misafirler öğrenci profillerini görüntüler; Gözlem Formu ile 21 ölçütlü MTSS Öğrenci Takip Formuna yanıt ekleyebilir. Gözlem Formu; gözlem türünü, gözlemin ne zamandır ve ne sıklıkta yapıldığını, daha önce uygulanan yaklaşımı ve değerlendirmeyi kaydeder. MTSS Öğrenci Takip Formundaki her ölçüt 1–4 veya G seçeneğiyle tek tıklamayla işaretlenir; kaydedilen yanıtlarda soru metniyle puanın açıklaması birlikte gösterilir. Düzenleyici, Tüm Değerlendirmeler ekranında formları ayrı ayrı seçebilir ve seçili forma özel Excel çıktısı alabilir. Excel'de her doldurulan form tek satırdır; MTSS ölçütlerinin cevapları aynı satırdaki ayrı sütunlarda yer alır. Misafirler kaydedilmiş form yanıtlarını, Tüm Değerlendirmeler ekranını ve Excel çıktısını göremez. Kişisel bilgileri yalnızca düzenleyici değiştirir. Öğrenci ve veli görüşmelerini yalnızca düzenleyici okuyabilir, ekleyebilir ve silebilir; misafirlere veya Excel çıktısına gönderilmez.
 
-Oturumlar 8 saat geçerlidir. Oturumlar ve giriş deneme sınırı artık paylaşılan veritabanındadır; yeniden başlatma veya başka Vercel fonksiyon örneği oturumu kaybettirmez. Çıkış, oturumu tüm örnekler için iptal eder. Vercel çerezleri `HttpOnly`, `SameSite=Strict` ve `Secure` kullanır.
+Oturumlar 8 saat geçerlidir. Sınırlı düzenleyicilerin yetkileri öğrenci profili, kayıtlı form yanıtı, görüşme ve Excel uçlarında sunucu tarafından sınıf bazında doğrulanır. Oturumlar ve giriş deneme sınırı paylaşılan veritabanındadır; yeniden başlatma veya başka Vercel fonksiyon örneği oturumu kaybettirmez. Çıkış, oturumu tüm örnekler için iptal eder. Vercel çerezleri `HttpOnly`, `SameSite=Strict` ve `Secure` kullanır.
 
 ## Kontroller
 

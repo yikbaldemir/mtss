@@ -3,6 +3,7 @@ const { schools, classes, teachers } = require('../seed.cjs');
 const { rubricScale, rubricCriteria, rubricSections } = require('./observation-form.cjs');
 const { workbook } = require('../xlsx.cjs');
 const { getDatabase } = require('./database.cjs');
+const { editorProfile, canAccessClass, publicEditorProfile } = require('./editor-accounts.cjs');
 
 function json(res, status, value) { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(value)); }
 function fail(status, message) { throw Object.assign(new Error(message), { status }); }
@@ -40,21 +41,30 @@ function tokenHash(token) { return crypto.createHash('sha256').update(token).dig
 async function session(req, db) {
   const token = (req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('session='))?.slice(8);
   if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
-  return await db.get('SELECT tokenHash, role, expires FROM sessions WHERE tokenHash=? AND expires>?', tokenHash(token), Date.now()) || null;
+  return await db.get('SELECT tokenHash, role, username, expires FROM sessions_v2 WHERE tokenHash=? AND expires>?', tokenHash(token), Date.now()) || null;
 }
 function editor(s) { if (s?.role !== 'editor') fail(403, 'Bu işlem için düzenleyici girişi gereklidir.'); }
-async function student(db, id) {
+function visibleClasses(s, schoolId) {
+  const values = classes.filter(item => item.schoolId === schoolId);
+  return s?.role === 'editor' ? values.filter(item => canAccessClass(s.username, item)) : values;
+}
+function authorizeClass(s, classId) {
+  if (s?.role !== 'editor') return;
+  const classItem = classes.find(item => item.id === classId);
+  if (!classItem || !canAccessClass(s.username, classItem)) fail(403, 'Bu sınıf için düzenleyici yetkiniz yok.');
+}
+async function student(db, id, s) {
   required(id, 'Öğrenci', 100);
-  const s = await db.get('SELECT * FROM students WHERE id=?', id);
-  if (!s) fail(404, 'Öğrenci bulunamadı.');
-  return s;
+  const value = await db.get('SELECT * FROM students WHERE id=?', id);
+  if (!value) fail(404, 'Öğrenci bulunamadı.');
+  authorizeClass(s, value.classId);
+  return value;
 }
 function selectedSchool(id) {
   const value = schools.find(item => item.id === id);
   if (!value) fail(400, 'Geçerli bir okul seçin.');
   return value;
 }
-function schoolClasses(schoolId) { return classes.filter(item => item.schoolId === schoolId); }
 function placeholders(values) { return values.map(() => '?').join(','); }
 function rubricAnswer(value) {
   const option = rubricScale.find(item => item.value === value);
@@ -74,12 +84,14 @@ function displayNote(record) {
     return value.note ? `${ratings}\nGenel not: ${value.note}` : ratings;
   } catch { return 'MTSS öğrenci takip formu yanıtı'; }
 }
-async function schoolStudents(db, schoolId) {
-  const ids = schoolClasses(schoolId).map(item => item.id);
+async function schoolStudents(db, classItems) {
+  const ids = classItems.map(item => item.id);
+  if (!ids.length) return [];
   return db.all(`SELECT * FROM students WHERE classId IN (${placeholders(ids)})`, ...ids);
 }
-async function records(db, schoolId) {
-  const ids = schoolClasses(schoolId).map(item => item.id);
+async function records(db, classItems) {
+  const ids = classItems.map(item => item.id);
+  if (!ids.length) return [];
   return (await db.all(`SELECT r.*, s.name AS student, s.classId FROM records r JOIN students s ON s.id=r.studentId WHERE r.kind IN ('observation','rubric') AND s.classId IN (${placeholders(ids)}) ORDER BY r.createdAt DESC`, ...ids))
     .map(r => ({ ...r, className: classes.find(c => c.id === r.classId).name, displayNote: displayNote(r) }));
 }
@@ -109,9 +121,9 @@ async function handler(req, res) {
     // Lazy initialization: importing the function never opens SQLite or accesses the DOM.
     const db = await getDatabase();
     const s = await session(req, db);
-    if (route === '/api/session' && req.method === 'GET') return json(res, 200, { role: s?.role || null });
+    if (route === '/api/session' && req.method === 'GET') return json(res, 200, { role: s?.role || null, user: s?.role === 'editor' ? publicEditorProfile(s.username) : null });
     if (route === '/api/login' && req.method === 'POST') {
-      const b = await body(req); let role = 'guest';
+      const b = await body(req); let role = 'guest', username = '';
       if (b.guest !== true) {
         // Vercel supplies this header; local requests use the socket address.
         const ip = process.env.VERCEL ? req.headers['x-vercel-forwarded-for'] || req.socket?.remoteAddress : req.socket?.remoteAddress;
@@ -122,38 +134,40 @@ async function handler(req, res) {
         await db.run('INSERT INTO login_attempts(key,count,until) VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=login_attempts.count+1', key, now + 300000);
         const attempt = await db.get('SELECT count FROM login_attempts WHERE key=?', key);
         if (attempt.count > 10) fail(429, 'Çok fazla deneme. 5 dakika sonra tekrar deneyin.');
-        const account = typeof b.username === 'string' ? await db.get('SELECT * FROM accounts WHERE username=?', b.username) : null;
+        username = typeof b.username === 'string' ? b.username.trim().toLocaleLowerCase('tr') : '';
+        const account = editorProfile(username) ? await db.get('SELECT * FROM accounts WHERE username=?', username) : null;
         if (!account || typeof b.password !== 'string' || b.password.length > 200 || !crypto.timingSafeEqual(crypto.scryptSync(b.password, account.salt, 64), Buffer.from(account.hash, 'hex'))) fail(401, 'Kullanıcı adı veya şifre hatalı.');
         await db.run('DELETE FROM login_attempts WHERE key=?', key);
         role = 'editor';
       }
       const token = crypto.randomBytes(32).toString('hex');
       await db.batch([
-        { sql: 'DELETE FROM sessions WHERE expires<=?', args: [Date.now()] },
-        ...(s ? [{ sql: 'DELETE FROM sessions WHERE tokenHash=?', args: [s.tokenHash] }] : []),
-        { sql: 'INSERT INTO sessions VALUES(?,?,?)', args: [tokenHash(token), role, Date.now() + 8 * 60 * 60 * 1000] }
+        { sql: 'DELETE FROM sessions_v2 WHERE expires<=?', args: [Date.now()] },
+        ...(s ? [{ sql: 'DELETE FROM sessions_v2 WHERE tokenHash=?', args: [s.tokenHash] }] : []),
+        { sql: 'INSERT INTO sessions_v2 VALUES(?,?,?,?)', args: [tokenHash(token), role, username, Date.now() + 8 * 60 * 60 * 1000] }
       ]);
       res.setHeader('Set-Cookie', cookie(req, token, 28800));
-      return json(res, 200, { role });
+      return json(res, 200, { role, user: role === 'editor' ? publicEditorProfile(username) : null });
     }
     if (route === '/api/logout' && req.method === 'POST') {
-      if (s) await db.run('DELETE FROM sessions WHERE tokenHash=?', s.tokenHash);
+      if (s) await db.run('DELETE FROM sessions_v2 WHERE tokenHash=?', s.tokenHash);
       res.setHeader('Set-Cookie', cookie(req, '', 0));
       return json(res, 200, { ok: true });
     }
     if (!s) fail(401, 'Lütfen giriş yapın.');
     if (route === '/api/schools' && req.method === 'GET') {
-      return json(res, 200, schools.map(item => ({ ...item, classCount: schoolClasses(item.id).length })));
+      return json(res, 200, schools.map(item => ({ ...item, classCount: visibleClasses(s, item.id).length })).filter(item => item.classCount));
     }
     if (route === '/api/data' && req.method === 'GET') {
       // Keep already-open browser tabs working while a new frontend deployment rolls out.
       const school = selectedSchool(url.searchParams.get('schoolId') || schools[0].id);
-      const visibleClasses = schoolClasses(school.id);
-      return json(res, 200, { school, classes: visibleClasses.map(({ id, name }) => ({ id, name })), teachers, rubricScale, rubricCriteria, rubricSections, students: await schoolStudents(db, school.id), records: s.role === 'editor' ? await records(db, school.id) : [] });
+      const allowedClasses = visibleClasses(s, school.id);
+      if (!allowedClasses.length) fail(403, 'Bu okulda erişebileceğiniz bir sınıf yok.');
+      return json(res, 200, { school, classes: allowedClasses.map(({ id, name }) => ({ id, name })), teachers, rubricScale, rubricCriteria, rubricSections, students: await schoolStudents(db, allowedClasses), records: s.role === 'editor' ? await records(db, allowedClasses) : [] });
     }
     const sm = route.match(/^\/api\/students\/([^/]+)$/);
     if (sm && req.method === 'PUT') {
-      editor(s); await student(db, sm[1]); const b = await body(req);
+      editor(s); await student(db, sm[1], s); const b = await body(req);
       if (!['Kız', 'Erkek', 'Belirtilmedi'].includes(b.gender)) fail(400, 'Cinsiyet seçimini kontrol edin.');
       if (b.birthDate && date(b.birthDate) > new Date().toISOString().slice(0, 10)) fail(400, 'Doğum tarihi gelecekte olamaz.');
       for (const k of ['parentName', 'phone']) if (typeof b[k] !== 'string' || b[k].length > 200) fail(400, 'Veli bilgilerini kontrol edin.');
@@ -161,7 +175,7 @@ async function handler(req, res) {
       return json(res, 200, { ok: true });
     }
     if (route === '/api/records' && req.method === 'POST') {
-      const b = await body(req); await student(db, b.studentId);
+      const b = await body(req); await student(db, b.studentId, s);
       if (!['observation', 'rubric'].includes(b.kind)) fail(400, 'Form türü geçersiz.');
       if (!teachers.includes(b.teacher)) fail(400, 'Öğretmen seçin.');
       let day, type, note;
@@ -190,11 +204,11 @@ async function handler(req, res) {
     if (route === '/api/meetings') {
       editor(s);
       if (req.method === 'GET') {
-        const id = url.searchParams.get('studentId'); await student(db, id);
+        const id = url.searchParams.get('studentId'); await student(db, id, s);
         return json(res, 200, await db.all('SELECT * FROM meetings WHERE studentId=? ORDER BY date DESC,createdAt DESC', id));
       }
       if (req.method === 'POST') {
-        const b = await body(req); await student(db, b.studentId);
+        const b = await body(req); await student(db, b.studentId, s);
         if (!['student', 'parent'].includes(b.kind)) fail(400, 'Görüşme türü geçersiz.');
         const id = crypto.randomUUID();
         await db.run('INSERT INTO meetings VALUES(?,?,?,?,?,?,?,?)', id, b.studentId, b.kind, date(b.date), required(b.participant, 'Katılımcı', 200), required(b.subject, 'Konu', 200), required(b.note, 'Görüşme notu'), new Date().toISOString());
@@ -203,17 +217,23 @@ async function handler(req, res) {
     }
     const mm = route.match(/^\/api\/meetings\/([^/]+)$/);
     if (mm && req.method === 'DELETE') {
-      editor(s); const result = await db.run('DELETE FROM meetings WHERE id=?', mm[1]);
-      if (!result.changes) fail(404, 'Görüşme bulunamadı.');
+      editor(s); const meeting = await db.get('SELECT studentId FROM meetings WHERE id=?', mm[1]);
+      if (!meeting) fail(404, 'Görüşme bulunamadı.');
+      await student(db, meeting.studentId, s);
+      await db.run('DELETE FROM meetings WHERE id=?', mm[1]);
       return json(res, 200, { ok: true });
     }
     if (route === '/api/export' && req.method === 'GET') {
       editor(s);
       const school = selectedSchool(url.searchParams.get('schoolId') || schools[0].id);
+      const allowedClasses = visibleClasses(s, school.id);
+      if (!allowedClasses.length) fail(403, 'Bu okulda erişebileceğiniz bir sınıf yok.');
+      const classId = url.searchParams.get('classId') || '';
+      if (classId && !allowedClasses.some(item => item.id === classId)) fail(403, 'Bu sınıf için Excel yetkiniz yok.');
       const kind = url.searchParams.get('kind') || '';
       if (kind && !['observation', 'rubric'].includes(kind)) fail(400, 'Form türünü kontrol edin.');
       const query = (url.searchParams.get('q') || '').toLocaleLowerCase('tr');
-      const rows = (await records(db, school.id)).filter(r => (!kind || r.kind === kind) && (!url.searchParams.get('classId') || r.classId === url.searchParams.get('classId')) && (!url.searchParams.get('teacher') || r.teacher === url.searchParams.get('teacher')) && (!query || `${r.student} ${r.displayNote} ${r.type}`.toLocaleLowerCase('tr').includes(query)));
+      const rows = (await records(db, allowedClasses)).filter(r => (!kind || r.kind === kind) && (!classId || r.classId === classId) && (!url.searchParams.get('teacher') || r.teacher === url.searchParams.get('teacher')) && (!query || `${r.student} ${r.displayNote} ${r.type}`.toLocaleLowerCase('tr').includes(query)));
       let sheet, filename;
       if (kind === 'rubric') {
         const answers = rows.map(r => {

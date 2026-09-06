@@ -31,6 +31,9 @@ const classes = definitions.map((item, classIndex) => ({
 
 const teachers = [
   'İlayda Hisarbeyli',
+  'Tuğba Saygı',
+  'Kübra Kaban',
+  'Selin Ak',
   'Ayşe Kaya',
   'Burcu Demir',
   'Emre Yıldız',

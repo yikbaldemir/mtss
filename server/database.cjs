@@ -1,5 +1,6 @@
 const crypto = require('node:crypto');
 const { classes } = require('../seed.cjs');
+const { editorProfiles } = require('./editor-accounts.cjs');
 
 // Both adapters expose the same asynchronous API. Only local development opens a file.
 function createDatabase(env = process.env) {
@@ -52,19 +53,25 @@ async function initialize(db, env = process.env) {
     'CREATE TABLE IF NOT EXISTS records(id TEXT PRIMARY KEY, studentId TEXT, kind TEXT, teacher TEXT, day TEXT, date TEXT, type TEXT, note TEXT, createdAt TEXT)',
     'CREATE TABLE IF NOT EXISTS meetings(id TEXT PRIMARY KEY, studentId TEXT, kind TEXT, date TEXT, participant TEXT, subject TEXT, note TEXT, createdAt TEXT)',
     'CREATE TABLE IF NOT EXISTS sessions(tokenHash TEXT PRIMARY KEY, role TEXT NOT NULL, expires INTEGER NOT NULL)',
+    'CREATE TABLE IF NOT EXISTS sessions_v2(tokenHash TEXT PRIMARY KEY, role TEXT NOT NULL, username TEXT NOT NULL, expires INTEGER NOT NULL)',
     'CREATE TABLE IF NOT EXISTS login_attempts(key TEXT PRIMARY KEY, count INTEGER NOT NULL, until INTEGER NOT NULL)',
-    'CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires)'
+    'CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires)',
+    'CREATE INDEX IF NOT EXISTS sessions_v2_expiry ON sessions_v2(expires)'
   ]);
   await db.batch(classes.filter(c => c.legacyId).map(c => ({
     sql: 'UPDATE students SET classId=? WHERE classId=?',
     args: [c.id, c.legacyId]
   })));
   await db.run("UPDATE records SET type='MTSS Öğrenci Takip Formu' WHERE kind='rubric'");
-  if (!await db.get('SELECT 1 FROM accounts WHERE username=?', 'ilaydahisarbeyli')) {
-    const salt = crypto.randomBytes(16).toString('hex');
-    const hash = crypto.scryptSync(env.EDITOR_PASSWORD || '123456', salt, 64).toString('hex');
+  for (const profile of editorProfiles) {
+    if (await db.get('SELECT 1 FROM accounts WHERE username=?', profile.username)) continue;
+    const configuredPassword = env[profile.passwordEnv];
+    const salt = configuredPassword || profile.fallbackPassword ? crypto.randomBytes(16).toString('hex') : profile.fallbackSalt;
+    const hash = configuredPassword || profile.fallbackPassword
+      ? crypto.scryptSync(configuredPassword || profile.fallbackPassword, salt, 64).toString('hex')
+      : profile.fallbackHash;
     // Safe if several cold starts initialize the database concurrently.
-    await db.run('INSERT OR IGNORE INTO accounts VALUES(?,?,?)', 'ilaydahisarbeyli', salt, hash);
+    await db.run('INSERT OR IGNORE INTO accounts VALUES(?,?,?)', profile.username, salt, hash);
   }
   await db.batch(classes.flatMap((c, ci) => c.students.map((name, i) => ({
     sql: 'INSERT OR IGNORE INTO students VALUES(?,?,?,?,?,?,?)',
