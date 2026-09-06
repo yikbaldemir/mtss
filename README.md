@@ -41,7 +41,7 @@ Yerel veritabanınız otomatik olarak internete yüklenmez. Vercel'deki veritaba
 
 ## Korunan işlevler
 
-Misafirler profilleri ve iki form türünü görüntüler, öğretmen seçerek form ekler ve filtrelenmiş formları Excel'e aktarabilir/yazdırabilir. Kişisel bilgileri yalnızca düzenleyici değiştirir. Öğrenci ve veli görüşmelerini yalnızca düzenleyici okuyabilir, ekleyebilir ve silebilir; misafirlere veya genel Excel çıktısına gönderilmez.
+Misafirler öğrenci profillerini görüntüler ve öğretmen seçerek iki form türüne yanıt ekleyebilir; ancak kaydedilmiş form yanıtlarını, Tüm Değerlendirmeler ekranını ve Excel çıktısını göremez. Kişisel bilgileri yalnızca düzenleyici değiştirir. Öğrenci ve veli görüşmelerini yalnızca düzenleyici okuyabilir, ekleyebilir ve silebilir; misafirlere veya genel Excel çıktısına gönderilmez.
 
 Oturumlar 8 saat geçerlidir. Oturumlar ve giriş deneme sınırı artık paylaşılan veritabanındadır; yeniden başlatma veya başka Vercel fonksiyon örneği oturumu kaybettirmez. Çıkış, oturumu tüm örnekler için iptal eder. Vercel çerezleri `HttpOnly`, `SameSite=Strict` ve `Secure` kullanır.
 
