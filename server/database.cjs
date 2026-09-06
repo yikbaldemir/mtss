@@ -55,6 +55,10 @@ async function initialize(db, env = process.env) {
     'CREATE TABLE IF NOT EXISTS login_attempts(key TEXT PRIMARY KEY, count INTEGER NOT NULL, until INTEGER NOT NULL)',
     'CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires)'
   ]);
+  await db.batch(classes.filter(c => c.legacyId).map(c => ({
+    sql: 'UPDATE students SET classId=? WHERE classId=?',
+    args: [c.id, c.legacyId]
+  })));
   if (!await db.get('SELECT 1 FROM accounts WHERE username=?', 'ilaydahisarbeyli')) {
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = crypto.scryptSync(env.EDITOR_PASSWORD || '123456', salt, 64).toString('hex');
@@ -63,7 +67,7 @@ async function initialize(db, env = process.env) {
   }
   await db.batch(classes.flatMap((c, ci) => c.students.map((name, i) => ({
     sql: 'INSERT OR IGNORE INTO students VALUES(?,?,?,?,?,?,?)',
-    args: [`${c.id}-${i}`, c.id, name, `${2026 - (ci < 3 ? ci + 3 : 6)}-${String((i % 8) + 1).padStart(2, '0')}-${String(i + 5).padStart(2, '0')}`, 'Belirtilmedi', '', '']
+    args: [`${c.legacyId || c.id}-${i}`, c.id, name, `${2026 - (ci < 3 ? ci + 3 : 6)}-${String((i % 8) + 1).padStart(2, '0')}-${String(i + 5).padStart(2, '0')}`, 'Belirtilmedi', '', '']
   }))));
   return db;
 }

@@ -16,8 +16,15 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     assert.equal((await request('/api/login','POST',{username:'ilaydahisarbeyli',password:'wrong'})).status,401);
     const guest=(await request('/api/login','POST',{guest:true})).cookie;
     const editor=(await request('/api/login','POST',{username:'ilaydahisarbeyli',password:'123456'})).cookie;
-    const d=(await request('/api/data','GET',null,guest)).data;
-    assert.equal(d.classes.length,6);assert.equal(d.students.length,60);for(const c of d.classes)assert.equal(d.students.filter(s=>s.classId===c.id).length,10);
+    const schools=(await request('/api/schools','GET',null,guest)).data;
+    assert.deepEqual(schools.map(s=>[s.id,s.classCount]),[['nazmi',12],['atagen',8]]);
+    assert.equal((await request('/api/data','GET',null,guest)).status,400);
+    const d=(await request('/api/data?schoolId=nazmi','GET',null,guest)).data;
+    const atagen=(await request('/api/data?schoolId=atagen','GET',null,guest)).data;
+    assert.equal(d.school.id,'nazmi');assert.equal(d.classes.length,12);assert.equal(d.students.length,120);
+    assert.equal(atagen.school.id,'atagen');assert.equal(atagen.classes.length,8);assert.equal(atagen.students.length,80);
+    for(const c of [...d.classes,...atagen.classes])assert.equal((c.id.startsWith('nazmi-')?d:atagen).students.filter(s=>s.classId===c.id).length,10);
+    assert.equal(d.students.some(s=>atagen.students.some(a=>a.id===s.id)),false);
     assert.equal('meetings' in d,false);
     const sid=d.students[0].id;
     assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,guest)).status,403);
@@ -35,15 +42,14 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,editor)).data.length,2);
     assert.equal((await request('/api/meetings/'+ids[0],'DELETE',{},guest)).status,403);
     assert.equal((await request('/api/meetings/'+ids[0],'DELETE',{},editor)).status,200);
-    const exported=await request('/api/export','GET',null,guest);assert.equal(exported.status,200);assert.equal(exported.data.readUInt32LE(0),0x04034b50);assert.ok(exported.data.includes(Buffer.from('=Örnek &amp; &lt;metin&gt;')));assert.ok(!exported.data.includes(Buffer.from('GİZLİ')));
+    const exported=await request('/api/export?schoolId=nazmi','GET',null,guest);assert.equal(exported.status,200);assert.equal(exported.data.readUInt32LE(0),0x04034b50);assert.ok(exported.data.includes(Buffer.from('=Örnek &amp; &lt;metin&gt;')));assert.ok(!exported.data.includes(Buffer.from('GİZLİ')));
     assert.equal((await request('/data/rehberlik.sqlite')).status,404);assert.equal((await request('/server.cjs')).status,404);
-    const publicData=JSON.stringify((await request('/api/data','GET',null,guest)).data);assert.ok(!publicData.includes('GİZLİ'));
+    const publicData=JSON.stringify((await request('/api/data?schoolId=nazmi','GET',null,guest)).data);assert.ok(!publicData.includes('GİZLİ'));
     await request('/api/logout','POST',{},editor);assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,editor)).status,401);
     await stop();await start();
     assert.equal((await request('/api/session','GET',null,guest)).data.role,'guest');
     assert.equal((await request('/api/session','GET',null,editor)).data.role,null);
     const again=(await request('/api/login','POST',{username:'ilaydahisarbeyli',password:'123456'})).cookie;
-    const saved=(await request('/api/data','GET',null,again)).data;assert.equal(saved.records.length,2);assert.equal(saved.students[0].parentName,'Örnek Veli');assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,again)).data.length,1);
+    const saved=(await request('/api/data?schoolId=nazmi','GET',null,again)).data;assert.equal(saved.records.length,2);assert.equal(saved.students[0].parentName,'Örnek Veli');assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,again)).data.length,1);
   }finally{if(child)await stop();fs.rmSync(dir,{recursive:true,force:true});}
 });
-

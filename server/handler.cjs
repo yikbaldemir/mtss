@@ -1,5 +1,5 @@
 const crypto = require('node:crypto');
-const { classes, teachers } = require('../seed.cjs');
+const { schools, classes, teachers } = require('../seed.cjs');
 const { workbook } = require('../xlsx.cjs');
 const { getDatabase } = require('./database.cjs');
 
@@ -48,8 +48,20 @@ async function student(db, id) {
   if (!s) fail(404, 'Öğrenci bulunamadı.');
   return s;
 }
-async function records(db) {
-  return (await db.all('SELECT r.*, s.name AS student, s.classId FROM records r JOIN students s ON s.id=r.studentId ORDER BY r.createdAt DESC'))
+function selectedSchool(id) {
+  const value = schools.find(item => item.id === id);
+  if (!value) fail(400, 'Geçerli bir okul seçin.');
+  return value;
+}
+function schoolClasses(schoolId) { return classes.filter(item => item.schoolId === schoolId); }
+function placeholders(values) { return values.map(() => '?').join(','); }
+async function schoolStudents(db, schoolId) {
+  const ids = schoolClasses(schoolId).map(item => item.id);
+  return db.all(`SELECT * FROM students WHERE classId IN (${placeholders(ids)})`, ...ids);
+}
+async function records(db, schoolId) {
+  const ids = schoolClasses(schoolId).map(item => item.id);
+  return (await db.all(`SELECT r.*, s.name AS student, s.classId FROM records r JOIN students s ON s.id=r.studentId WHERE s.classId IN (${placeholders(ids)}) ORDER BY r.createdAt DESC`, ...ids))
     .map(r => ({ ...r, className: classes.find(c => c.id === r.classId).name }));
 }
 function cookie(req, value, maxAge) {
@@ -111,8 +123,13 @@ async function handler(req, res) {
       return json(res, 200, { ok: true });
     }
     if (!s) fail(401, 'Lütfen giriş yapın.');
+    if (route === '/api/schools' && req.method === 'GET') {
+      return json(res, 200, schools.map(item => ({ ...item, classCount: schoolClasses(item.id).length })));
+    }
     if (route === '/api/data' && req.method === 'GET') {
-      return json(res, 200, { classes: classes.map(({ id, name }) => ({ id, name })), teachers, students: await db.all('SELECT * FROM students'), records: await records(db) });
+      const school = selectedSchool(url.searchParams.get('schoolId'));
+      const visibleClasses = schoolClasses(school.id);
+      return json(res, 200, { school, classes: visibleClasses.map(({ id, name }) => ({ id, name })), teachers, students: await schoolStudents(db, school.id), records: await records(db, school.id) });
     }
     const sm = route.match(/^\/api\/students\/([^/]+)$/);
     if (sm && req.method === 'PUT') {
@@ -152,7 +169,8 @@ async function handler(req, res) {
       return json(res, 200, { ok: true });
     }
     if (route === '/api/export' && req.method === 'GET') {
-      const rows = (await records(db)).filter(r => (!url.searchParams.get('classId') || r.classId === url.searchParams.get('classId')) && (!url.searchParams.get('teacher') || r.teacher === url.searchParams.get('teacher')) && (!url.searchParams.get('q') || `${r.student} ${r.note} ${r.type}`.toLocaleLowerCase('tr').includes(url.searchParams.get('q').toLocaleLowerCase('tr'))));
+      const school = selectedSchool(url.searchParams.get('schoolId'));
+      const rows = (await records(db, school.id)).filter(r => (!url.searchParams.get('classId') || r.classId === url.searchParams.get('classId')) && (!url.searchParams.get('teacher') || r.teacher === url.searchParams.get('teacher')) && (!url.searchParams.get('q') || `${r.student} ${r.note} ${r.type}`.toLocaleLowerCase('tr').includes(url.searchParams.get('q').toLocaleLowerCase('tr'))));
       const bytes = workbook([['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Gün', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, r.kind === 'parent' ? 'Veli bilgi formu' : 'Öğretmen gözlem formu', r.teacher, r.day, r.date, r.type, r.note])]);
       res.writeHead(200, { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': 'attachment; filename="rehberlik-kayitlari.xlsx"' });
       return res.end(bytes);
