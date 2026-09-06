@@ -216,12 +216,12 @@ async function handler(req, res) {
       const rows = (await records(db, school.id)).filter(r => (!kind || r.kind === kind) && (!url.searchParams.get('classId') || r.classId === url.searchParams.get('classId')) && (!url.searchParams.get('teacher') || r.teacher === url.searchParams.get('teacher')) && (!query || `${r.student} ${r.displayNote} ${r.type}`.toLocaleLowerCase('tr').includes(query)));
       let sheet, filename;
       if (kind === 'rubric') {
-        const answers = rows.flatMap(r => {
+        const answers = rows.map(r => {
           let value = { ratings: {}, note: '' };
           try { value = JSON.parse(r.note); } catch {}
-          return rubricCriteria.map(item => [r.className, r.student, 'MTSS Öğrenci Takip Formu', r.teacher, r.date, rubricSections.find(section => section.id === item.section)?.name || item.section, item.code, item.area, item.behavior, rubricAnswer(value.ratings?.[item.code]), value.note || '']);
+          return [r.className, r.student, 'MTSS Öğrenci Takip Formu', r.teacher, r.date, ...rubricCriteria.map(item => rubricAnswer(value.ratings?.[item.code])), value.note || ''];
         });
-        sheet = [['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Tarih', 'Bölüm', 'Kod', 'Alan / başlık', 'Soru', 'Cevap', 'Genel not'], ...answers];
+        sheet = [['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Tarih', ...rubricCriteria.map(item => `${item.code} · ${item.area} — ${item.behavior}`), 'Genel not'], ...answers];
         filename = 'mtss-ogrenci-takip-formu.xlsx';
       } else {
         sheet = [['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, r.kind === 'rubric' ? 'MTSS Öğrenci Takip Formu' : 'Gözlem Formu', r.teacher, r.date, r.type, r.displayNote])];
