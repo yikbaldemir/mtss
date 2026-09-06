@@ -59,6 +59,7 @@ async function initialize(db, env = process.env) {
     sql: 'UPDATE students SET classId=? WHERE classId=?',
     args: [c.id, c.legacyId]
   })));
+  await db.run("UPDATE records SET type='MTSS Öğrenci Takip Formu' WHERE kind='rubric'");
   if (!await db.get('SELECT 1 FROM accounts WHERE username=?', 'ilaydahisarbeyli')) {
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = crypto.scryptSync(env.EDITOR_PASSWORD || '123456', salt, 64).toString('hex');

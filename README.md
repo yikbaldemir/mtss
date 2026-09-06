@@ -41,7 +41,7 @@ Yerel veritabanınız otomatik olarak internete yüklenmez. Vercel'deki veritaba
 
 ## Korunan işlevler
 
-Misafirler öğrenci profillerini görüntüler; MTSS Öğrenci Takip Formu ile 21 ölçütlü Gözlem Formuna yanıt ekleyebilir. Gözlem Formundaki her ölçüt 1–4 veya G seçeneğiyle tek tıklamayla işaretlenir. Misafirler kaydedilmiş form yanıtlarını, Tüm Değerlendirmeler ekranını ve Excel çıktısını göremez. Kişisel bilgileri yalnızca düzenleyici değiştirir. Öğrenci ve veli görüşmelerini yalnızca düzenleyici okuyabilir, ekleyebilir ve silebilir; misafirlere veya genel Excel çıktısına gönderilmez.
+Misafirler öğrenci profillerini görüntüler; Gözlem Formu ile 21 ölçütlü MTSS Öğrenci Takip Formuna yanıt ekleyebilir. MTSS Öğrenci Takip Formundaki her ölçüt 1–4 veya G seçeneğiyle tek tıklamayla işaretlenir. Misafirler kaydedilmiş form yanıtlarını, Tüm Değerlendirmeler ekranını ve Excel çıktısını göremez. Kişisel bilgileri yalnızca düzenleyici değiştirir. Öğrenci ve veli görüşmelerini yalnızca düzenleyici okuyabilir, ekleyebilir ve silebilir; misafirlere veya genel Excel çıktısına gönderilmez.
 
 Oturumlar 8 saat geçerlidir. Oturumlar ve giriş deneme sınırı artık paylaşılan veritabanındadır; yeniden başlatma veya başka Vercel fonksiyon örneği oturumu kaybettirmez. Çıkış, oturumu tüm örnekler için iptal eder. Vercel çerezleri `HttpOnly`, `SameSite=Strict` ve `Secure` kullanır.
 

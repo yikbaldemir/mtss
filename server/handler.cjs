@@ -62,7 +62,7 @@ function displayNote(record) {
     const value = JSON.parse(record.note);
     const ratings = rubricCriteria.map(item => `${item.code}: ${value.ratings[item.code]}`).join(' · ');
     return value.note ? `${ratings}\nGenel not: ${value.note}` : ratings;
-  } catch { return 'Gözlem formu yanıtı'; }
+  } catch { return 'MTSS öğrenci takip formu yanıtı'; }
 }
 async function schoolStudents(db, schoolId) {
   const ids = schoolClasses(schoolId).map(item => item.id);
@@ -169,7 +169,7 @@ async function handler(req, res) {
         }
         if (typeof b.note !== 'string' || b.note.length > 5000) fail(400, 'Genel not alanını kontrol edin.');
         day = '';
-        type = 'Gözlem Formu';
+        type = 'MTSS Öğrenci Takip Formu';
         note = JSON.stringify({ ratings, note: b.note.trim() });
       }
       const id = crypto.randomUUID();
@@ -200,7 +200,7 @@ async function handler(req, res) {
       editor(s);
       const school = selectedSchool(url.searchParams.get('schoolId') || schools[0].id);
       const rows = (await records(db, school.id)).filter(r => (!url.searchParams.get('classId') || r.classId === url.searchParams.get('classId')) && (!url.searchParams.get('teacher') || r.teacher === url.searchParams.get('teacher')) && (!url.searchParams.get('q') || `${r.student} ${r.note} ${r.type}`.toLocaleLowerCase('tr').includes(url.searchParams.get('q').toLocaleLowerCase('tr'))));
-      const bytes = workbook([['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Gün', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, r.kind === 'rubric' ? 'Gözlem Formu' : 'MTSS Öğrenci Takip Formu', r.teacher, r.day, r.date, r.type, r.displayNote])]);
+      const bytes = workbook([['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Gün', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, r.kind === 'rubric' ? 'MTSS Öğrenci Takip Formu' : 'Gözlem Formu', r.teacher, r.day, r.date, r.type, r.displayNote])]);
       res.writeHead(200, { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': 'attachment; filename="rehberlik-kayitlari.xlsx"' });
       return res.end(bytes);
     }
