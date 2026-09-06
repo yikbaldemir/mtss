@@ -57,7 +57,13 @@ function selectedSchool(id) {
 function schoolClasses(schoolId) { return classes.filter(item => item.schoolId === schoolId); }
 function placeholders(values) { return values.map(() => '?').join(','); }
 function displayNote(record) {
-  if (record.kind !== 'rubric') return record.note;
+  if (record.kind === 'observation') {
+    try {
+      const value = JSON.parse(record.note);
+      if (value.version !== 1) return record.note;
+      return `Gözlem: ${value.note}\nNe zamandır / ne sıklıkta: ${value.frequency}\nDaha önce yapılanlar: ${value.previousActions}`;
+    } catch { return record.note; }
+  }
   try {
     const value = JSON.parse(record.note);
     const ratings = rubricCriteria.map(item => `${item.code}: ${value.ratings[item.code]}`).join(' · ');
@@ -156,9 +162,10 @@ async function handler(req, res) {
       if (!teachers.includes(b.teacher)) fail(400, 'Öğretmen seçin.');
       let day, type, note;
       if (b.kind === 'observation') {
-        day = required(b.day, 'Gün', 30);
+        day = '';
         type = required(b.type, 'Tür', 100);
-        note = required(b.note, 'Form içeriği');
+        if (!['Genel Gözlem', 'Akademik', 'Sosyal-Duygusal', 'Davranış', 'Akran İlişkileri', 'Uyum Süreci', 'Devamsızlık / Okula Katılım', 'Diğer'].includes(type)) fail(400, 'Gözlem türünü kontrol edin.');
+        note = JSON.stringify({ version: 1, note: required(b.note, 'Form içeriği'), frequency: required(b.frequency, 'Gözlem sıklığı', 1000), previousActions: required(b.previousActions, 'Daha önce yapılanlar', 5000) });
       } else {
         if (!b.ratings || typeof b.ratings !== 'object' || Array.isArray(b.ratings)) fail(400, 'Gözlem düzeylerini işaretleyin.');
         const allowed = rubricScale.map(item => item.value);
@@ -200,7 +207,7 @@ async function handler(req, res) {
       editor(s);
       const school = selectedSchool(url.searchParams.get('schoolId') || schools[0].id);
       const rows = (await records(db, school.id)).filter(r => (!url.searchParams.get('classId') || r.classId === url.searchParams.get('classId')) && (!url.searchParams.get('teacher') || r.teacher === url.searchParams.get('teacher')) && (!url.searchParams.get('q') || `${r.student} ${r.note} ${r.type}`.toLocaleLowerCase('tr').includes(url.searchParams.get('q').toLocaleLowerCase('tr'))));
-      const bytes = workbook([['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Gün', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, r.kind === 'rubric' ? 'MTSS Öğrenci Takip Formu' : 'Gözlem Formu', r.teacher, r.day, r.date, r.type, r.displayNote])]);
+      const bytes = workbook([['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, r.kind === 'rubric' ? 'MTSS Öğrenci Takip Formu' : 'Gözlem Formu', r.teacher, r.date, r.type, r.displayNote])]);
       res.writeHead(200, { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': 'attachment; filename="rehberlik-kayitlari.xlsx"' });
       return res.end(bytes);
     }

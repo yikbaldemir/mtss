@@ -32,8 +32,9 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     assert.equal((await request('/api/students/'+sid,'PUT',profile,guest)).status,403);
     assert.equal((await request('/api/students/'+sid,'PUT',profile,editor)).status,200);
     assert.equal((await request('/api/students/'+sid,'PUT',{...profile,birthDate:'2023-02-31'},editor)).status,400);
-    const form={studentId:sid,teacher:d.teachers[0],day:'1. Gün',date:'2026-09-03',type:'Genel Bilgi',note:'=Örnek & <metin>\nİkinci satır'};
+    const form={studentId:sid,teacher:d.teachers[0],date:'2026-09-03',type:'Genel Gözlem',frequency:'Yaklaşık iki haftadır, her gün',previousActions:'Sınıf içinde kısa hatırlatmalar yaptım.',note:'=Örnek & <metin>\nİkinci satır'};
     assert.equal((await request('/api/records','POST',{...form,kind:'observation'},guest)).status,201);
+    assert.equal((await request('/api/records','POST',{...form,kind:'observation',frequency:''},guest)).status,400);
     assert.equal((await request('/api/records','POST',{...form,kind:'parent'},guest)).status,400);
     const ratings=Object.fromEntries(d.rubricCriteria.map(item=>[item.code,'3']));
     assert.equal((await request('/api/records','POST',{studentId:sid,kind:'rubric',teacher:d.teachers[0],date:'2026-09-03',ratings,note:'Genel gözlem notu'},guest)).status,201);
