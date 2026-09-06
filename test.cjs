@@ -65,7 +65,7 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
       const created=await request('/api/meetings','POST',m,editor);assert.equal(created.status,201);ids.push(created.data.id);
     }
     assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,editor)).data.length,2);
-    const secondPreschoolSid=d.students.find(student=>student.classId===d.students[0].classId&&student.id!==sid).id;
+    const secondPreschoolSid=d.students.find(student=>student.classId==='nazmi-anaokulu4yas').id;
     const group={studentIds:[sid,secondPreschoolSid],kind:'student',format:'group',status:'completed',date:'2026-09-04',subject:'Sosyal-Duygusal',note:'Sıra alma çalışması yapıldı.'};
     assert.equal((await request('/api/interviews','POST',group,guest)).status,403);
     const groupCreated=await request('/api/interviews','POST',group,tugba);assert.equal(groupCreated.status,201);
