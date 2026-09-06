@@ -160,7 +160,7 @@ async function handler(req, res) {
     fail(404, 'İşlem bulunamadı.');
   } catch (e) {
     // Do not log connection strings, tokens, or student content from driver errors.
-    if (!e.status) console.error('MTSS 1.0 API request failed:', e.code || e.name || 'Error');
+    if (!e.status) console.error('MTSS API request failed:', e.code || e.name || 'Error');
     json(res, e.status || 500, { error: e.status ? e.message : 'Kayıt işlenemedi. Lütfen tekrar deneyin.' });
   }
 }

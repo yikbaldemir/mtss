@@ -16,5 +16,5 @@ const server = http.createServer((req, res) => {
   res.end(fs.readFileSync(path.join(__dirname, '..', 'public', files[route])));
 });
 server.listen(Number(process.env.PORT || 3000), process.env.HOST || '127.0.0.1', () => {
-  console.log(`MTSS 1.0: http://localhost:${server.address().port}`);
+  console.log(`MTSS: http://localhost:${server.address().port}`);
 });

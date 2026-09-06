@@ -1,4 +1,4 @@
-# MTSS 1.0 · Öğrenci Takip Sistemi
+# MTSS · Öğrenci Takip Sistemi
 
 Mevcut tasarım ve öğrenci/form/görüşme akışları korunmuştur. Altı sınıfta toplam 60 örnek öğrenci vardır.
 
@@ -29,7 +29,7 @@ Yerel veritabanınız otomatik olarak internete yüklenmez. Vercel'deki veritaba
 
 ## Dosya yapısı
 
-- `public/index.html`: mevcut MTSS 1.0 görünümü ve stilleri.
+- `public/index.html`: mevcut MTSS görünümü ve stilleri.
 - `public/app.js`: yalnızca tarayıcıda çalışan DOM kodu. Node.js tarafından import edilmez.
 - `api/index.mjs`: Vercel'in çalıştırdığı sunucu fonksiyonu; port dinlemez.
 - `server/handler.cjs`: yerel sunucunun ve Vercel'in paylaştığı API/yetki mantığı.

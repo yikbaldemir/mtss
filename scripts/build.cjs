@@ -9,4 +9,4 @@ for (const file of ['public/app.js', 'api/index.mjs', 'server/handler.cjs', 'ser
 const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
 if (!html.includes('src="/app.js"')) throw new Error('Browser script is missing.');
 if (fs.existsSync(path.join(root, 'app.cjs'))) throw new Error('Remove the obsolete root app.cjs entrypoint; browser code belongs in public/app.js.');
-console.log('MTSS 1.0 hazır: public/ statik dosyaları ve api/index.mjs sunucu fonksiyonu.');
+console.log('MTSS hazır: public/ statik dosyaları ve api/index.mjs sunucu fonksiyonu.');
