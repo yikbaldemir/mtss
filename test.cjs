@@ -49,7 +49,10 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     assert.equal((await request('/api/meetings/'+ids[0],'DELETE',{},guest)).status,403);
     assert.equal((await request('/api/meetings/'+ids[0],'DELETE',{},editor)).status,200);
     assert.equal((await request('/api/export?schoolId=nazmi','GET',null,guest)).status,403);
-    const exported=await request('/api/export?schoolId=nazmi','GET',null,editor);assert.equal(exported.status,200);assert.equal(exported.data.readUInt32LE(0),0x04034b50);assert.ok(exported.data.includes(Buffer.from('=Örnek &amp; &lt;metin&gt;')));assert.ok(exported.data.includes(Buffer.from('A1: 3')));assert.ok(!exported.data.includes(Buffer.from('GİZLİ')));
+    const exported=await request('/api/export?schoolId=nazmi','GET',null,editor);assert.equal(exported.status,200);assert.equal(exported.data.readUInt32LE(0),0x04034b50);assert.ok(exported.data.includes(Buffer.from('=Örnek &amp; &lt;metin&gt;')));assert.ok(exported.data.includes(Buffer.from('Cevap: 3 — Bağımsız Sergiliyor')));assert.ok(!exported.data.includes(Buffer.from('GİZLİ')));
+    const observationExport=await request('/api/export?schoolId=nazmi&kind=observation','GET',null,editor);assert.equal(observationExport.status,200);assert.ok(observationExport.data.includes(Buffer.from('=Örnek &amp; &lt;metin&gt;')));assert.ok(!observationExport.data.includes(Buffer.from(d.rubricCriteria[0].behavior)));
+    const rubricExport=await request('/api/export?schoolId=nazmi&kind=rubric','GET',null,editor);assert.equal(rubricExport.status,200);assert.ok(rubricExport.data.includes(Buffer.from(d.rubricCriteria[0].behavior)));assert.ok(rubricExport.data.includes(Buffer.from('3 — Bağımsız Sergiliyor')));assert.ok(!rubricExport.data.includes(Buffer.from('=Örnek')));
+    assert.equal((await request('/api/export?schoolId=nazmi&kind=unknown','GET',null,editor)).status,400);
     assert.equal((await request('/data/rehberlik.sqlite')).status,404);assert.equal((await request('/server.cjs')).status,404);
     const publicData=JSON.stringify((await request('/api/data?schoolId=nazmi','GET',null,guest)).data);assert.ok(!publicData.includes('GİZLİ'));assert.ok(!publicData.includes('=Örnek'));
     await request('/api/logout','POST',{},editor);assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,editor)).status,401);

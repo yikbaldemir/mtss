@@ -56,6 +56,10 @@ function selectedSchool(id) {
 }
 function schoolClasses(schoolId) { return classes.filter(item => item.schoolId === schoolId); }
 function placeholders(values) { return values.map(() => '?').join(','); }
+function rubricAnswer(value) {
+  const option = rubricScale.find(item => item.value === value);
+  return option ? `${option.value} — ${option.label}` : value || '—';
+}
 function displayNote(record) {
   if (record.kind === 'observation') {
     try {
@@ -66,7 +70,7 @@ function displayNote(record) {
   }
   try {
     const value = JSON.parse(record.note);
-    const ratings = rubricCriteria.map(item => `${item.code}: ${value.ratings[item.code]}`).join(' · ');
+    const ratings = rubricCriteria.map(item => `${item.code} — ${item.area}\nSoru: ${item.behavior}\nCevap: ${rubricAnswer(value.ratings[item.code])}`).join('\n\n');
     return value.note ? `${ratings}\nGenel not: ${value.note}` : ratings;
   } catch { return 'MTSS öğrenci takip formu yanıtı'; }
 }
@@ -206,9 +210,25 @@ async function handler(req, res) {
     if (route === '/api/export' && req.method === 'GET') {
       editor(s);
       const school = selectedSchool(url.searchParams.get('schoolId') || schools[0].id);
-      const rows = (await records(db, school.id)).filter(r => (!url.searchParams.get('classId') || r.classId === url.searchParams.get('classId')) && (!url.searchParams.get('teacher') || r.teacher === url.searchParams.get('teacher')) && (!url.searchParams.get('q') || `${r.student} ${r.note} ${r.type}`.toLocaleLowerCase('tr').includes(url.searchParams.get('q').toLocaleLowerCase('tr'))));
-      const bytes = workbook([['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, r.kind === 'rubric' ? 'MTSS Öğrenci Takip Formu' : 'Gözlem Formu', r.teacher, r.date, r.type, r.displayNote])]);
-      res.writeHead(200, { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': 'attachment; filename="rehberlik-kayitlari.xlsx"' });
+      const kind = url.searchParams.get('kind') || '';
+      if (kind && !['observation', 'rubric'].includes(kind)) fail(400, 'Form türünü kontrol edin.');
+      const query = (url.searchParams.get('q') || '').toLocaleLowerCase('tr');
+      const rows = (await records(db, school.id)).filter(r => (!kind || r.kind === kind) && (!url.searchParams.get('classId') || r.classId === url.searchParams.get('classId')) && (!url.searchParams.get('teacher') || r.teacher === url.searchParams.get('teacher')) && (!query || `${r.student} ${r.displayNote} ${r.type}`.toLocaleLowerCase('tr').includes(query)));
+      let sheet, filename;
+      if (kind === 'rubric') {
+        const answers = rows.flatMap(r => {
+          let value = { ratings: {}, note: '' };
+          try { value = JSON.parse(r.note); } catch {}
+          return rubricCriteria.map(item => [r.className, r.student, 'MTSS Öğrenci Takip Formu', r.teacher, r.date, rubricSections.find(section => section.id === item.section)?.name || item.section, item.code, item.area, item.behavior, rubricAnswer(value.ratings?.[item.code]), value.note || '']);
+        });
+        sheet = [['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Tarih', 'Bölüm', 'Kod', 'Alan / başlık', 'Soru', 'Cevap', 'Genel not'], ...answers];
+        filename = 'mtss-ogrenci-takip-formu.xlsx';
+      } else {
+        sheet = [['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, r.kind === 'rubric' ? 'MTSS Öğrenci Takip Formu' : 'Gözlem Formu', r.teacher, r.date, r.type, r.displayNote])];
+        filename = kind === 'observation' ? 'gozlem-formu.xlsx' : 'rehberlik-kayitlari.xlsx';
+      }
+      const bytes = workbook(sheet);
+      res.writeHead(200, { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': `attachment; filename="${filename}"` });
       return res.end(bytes);
     }
     fail(404, 'İşlem bulunamadı.');
