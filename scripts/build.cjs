@@ -3,7 +3,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const root = path.join(__dirname, '..');
 // Static assets are source files, not server entrypoints. No code generation is needed.
-for (const file of ['public/app.js', 'api/index.mjs', 'server/handler.cjs', 'server/database.cjs']) {
+for (const file of ['public/app.js', 'api/index.mjs', 'server/handler.cjs', 'server/database.cjs', 'server/observation-form.cjs']) {
   execFileSync(process.execPath, ['--check', path.join(root, file)]);
 }
 const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');

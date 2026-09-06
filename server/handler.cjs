@@ -1,5 +1,6 @@
 const crypto = require('node:crypto');
 const { schools, classes, teachers } = require('../seed.cjs');
+const { rubricScale, rubricCriteria, rubricSections } = require('./observation-form.cjs');
 const { workbook } = require('../xlsx.cjs');
 const { getDatabase } = require('./database.cjs');
 
@@ -55,14 +56,22 @@ function selectedSchool(id) {
 }
 function schoolClasses(schoolId) { return classes.filter(item => item.schoolId === schoolId); }
 function placeholders(values) { return values.map(() => '?').join(','); }
+function displayNote(record) {
+  if (record.kind !== 'rubric') return record.note;
+  try {
+    const value = JSON.parse(record.note);
+    const ratings = rubricCriteria.map(item => `${item.code}: ${value.ratings[item.code]}`).join(' · ');
+    return value.note ? `${ratings}\nGenel not: ${value.note}` : ratings;
+  } catch { return 'Gözlem formu yanıtı'; }
+}
 async function schoolStudents(db, schoolId) {
   const ids = schoolClasses(schoolId).map(item => item.id);
   return db.all(`SELECT * FROM students WHERE classId IN (${placeholders(ids)})`, ...ids);
 }
 async function records(db, schoolId) {
   const ids = schoolClasses(schoolId).map(item => item.id);
-  return (await db.all(`SELECT r.*, s.name AS student, s.classId FROM records r JOIN students s ON s.id=r.studentId WHERE r.kind='observation' AND s.classId IN (${placeholders(ids)}) ORDER BY r.createdAt DESC`, ...ids))
-    .map(r => ({ ...r, className: classes.find(c => c.id === r.classId).name }));
+  return (await db.all(`SELECT r.*, s.name AS student, s.classId FROM records r JOIN students s ON s.id=r.studentId WHERE r.kind IN ('observation','rubric') AND s.classId IN (${placeholders(ids)}) ORDER BY r.createdAt DESC`, ...ids))
+    .map(r => ({ ...r, className: classes.find(c => c.id === r.classId).name, displayNote: displayNote(r) }));
 }
 function cookie(req, value, maxAge) {
   const secure = process.env.VERCEL || req.socket?.encrypted;
@@ -130,7 +139,7 @@ async function handler(req, res) {
       // Keep already-open browser tabs working while a new frontend deployment rolls out.
       const school = selectedSchool(url.searchParams.get('schoolId') || schools[0].id);
       const visibleClasses = schoolClasses(school.id);
-      return json(res, 200, { school, classes: visibleClasses.map(({ id, name }) => ({ id, name })), teachers, students: await schoolStudents(db, school.id), records: s.role === 'editor' ? await records(db, school.id) : [] });
+      return json(res, 200, { school, classes: visibleClasses.map(({ id, name }) => ({ id, name })), teachers, rubricScale, rubricCriteria, rubricSections, students: await schoolStudents(db, school.id), records: s.role === 'editor' ? await records(db, school.id) : [] });
     }
     const sm = route.match(/^\/api\/students\/([^/]+)$/);
     if (sm && req.method === 'PUT') {
@@ -143,10 +152,28 @@ async function handler(req, res) {
     }
     if (route === '/api/records' && req.method === 'POST') {
       const b = await body(req); await student(db, b.studentId);
-      if (b.kind !== 'observation') fail(400, 'Form türü geçersiz.');
+      if (!['observation', 'rubric'].includes(b.kind)) fail(400, 'Form türü geçersiz.');
       if (!teachers.includes(b.teacher)) fail(400, 'Öğretmen seçin.');
+      let day, type, note;
+      if (b.kind === 'observation') {
+        day = required(b.day, 'Gün', 30);
+        type = required(b.type, 'Tür', 100);
+        note = required(b.note, 'Form içeriği');
+      } else {
+        if (!b.ratings || typeof b.ratings !== 'object' || Array.isArray(b.ratings)) fail(400, 'Gözlem düzeylerini işaretleyin.');
+        const allowed = rubricScale.map(item => item.value);
+        const ratings = {};
+        for (const item of rubricCriteria) {
+          if (!allowed.includes(b.ratings[item.code])) fail(400, `${item.code} için bir düzey seçin.`);
+          ratings[item.code] = b.ratings[item.code];
+        }
+        if (typeof b.note !== 'string' || b.note.length > 5000) fail(400, 'Genel not alanını kontrol edin.');
+        day = '';
+        type = 'Gözlem Formu';
+        note = JSON.stringify({ ratings, note: b.note.trim() });
+      }
       const id = crypto.randomUUID();
-      await db.run('INSERT INTO records VALUES(?,?,?,?,?,?,?,?,?)', id, b.studentId, b.kind, b.teacher, b.kind === 'observation' ? required(b.day, 'Gün', 30) : '', date(b.date), required(b.type, 'Tür', 100), required(b.note, 'Form içeriği'), new Date().toISOString());
+      await db.run('INSERT INTO records VALUES(?,?,?,?,?,?,?,?,?)', id, b.studentId, b.kind, b.teacher, day, date(b.date), type, note, new Date().toISOString());
       return json(res, 201, { id });
     }
     if (route === '/api/meetings') {
@@ -173,7 +200,7 @@ async function handler(req, res) {
       editor(s);
       const school = selectedSchool(url.searchParams.get('schoolId') || schools[0].id);
       const rows = (await records(db, school.id)).filter(r => (!url.searchParams.get('classId') || r.classId === url.searchParams.get('classId')) && (!url.searchParams.get('teacher') || r.teacher === url.searchParams.get('teacher')) && (!url.searchParams.get('q') || `${r.student} ${r.note} ${r.type}`.toLocaleLowerCase('tr').includes(url.searchParams.get('q').toLocaleLowerCase('tr'))));
-      const bytes = workbook([['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Gün', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, 'Öğretmen gözlem formu', r.teacher, r.day, r.date, r.type, r.note])]);
+      const bytes = workbook([['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Gün', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, r.kind === 'rubric' ? 'Gözlem Formu' : 'MTSS Öğrenci Takip Formu', r.teacher, r.day, r.date, r.type, r.displayNote])]);
       res.writeHead(200, { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': 'attachment; filename="rehberlik-kayitlari.xlsx"' });
       return res.end(bytes);
     }
