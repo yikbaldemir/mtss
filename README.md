@@ -41,7 +41,7 @@ Yerel veritabanınız otomatik olarak internete yüklenmez. Vercel'deki veritaba
 
 ## Korunan işlevler
 
-Misafirler öğrenci profillerini görüntüler ve öğretmen seçerek iki form türüne yanıt ekleyebilir; ancak kaydedilmiş form yanıtlarını, Tüm Değerlendirmeler ekranını ve Excel çıktısını göremez. Kişisel bilgileri yalnızca düzenleyici değiştirir. Öğrenci ve veli görüşmelerini yalnızca düzenleyici okuyabilir, ekleyebilir ve silebilir; misafirlere veya genel Excel çıktısına gönderilmez.
+Misafirler öğrenci profillerini görüntüler ve öğretmen seçerek gözlem formuna yanıt ekleyebilir; ancak kaydedilmiş form yanıtlarını, Tüm Değerlendirmeler ekranını ve Excel çıktısını göremez. Kişisel bilgileri yalnızca düzenleyici değiştirir. Öğrenci ve veli görüşmelerini yalnızca düzenleyici okuyabilir, ekleyebilir ve silebilir; misafirlere veya genel Excel çıktısına gönderilmez.
 
 Oturumlar 8 saat geçerlidir. Oturumlar ve giriş deneme sınırı artık paylaşılan veritabanındadır; yeniden başlatma veya başka Vercel fonksiyon örneği oturumu kaybettirmez. Çıkış, oturumu tüm örnekler için iptal eder. Vercel çerezleri `HttpOnly`, `SameSite=Strict` ve `Secure` kullanır.
 
@@ -52,6 +52,6 @@ npm run build
 npm test
 ```
 
-Testler geçici veritabanı kullanır. Yerel sunucu ve gerçek Vercel API export'u üzerinden giriş, misafir yetkileri, profil düzenleme, iki form ve iki görüşme türü, silme, Excel ve yeniden başlatma sonrası kayıt/oturum kalıcılığı kontrol edilir. Vercel test sunucusu rewrite ve önceden ayrıştırılmış JSON gövdesini taklit eder; gerçek bulut dağıtımının yerine geçmez. Uzak Turso bağlantısını canlı doğrulamak için ilgili ortam değişkenleri gerekir.
+Testler geçici veritabanı kullanır. Yerel sunucu ve gerçek Vercel API export'u üzerinden giriş, misafir yetkileri, profil düzenleme, gözlem formu, iki görüşme türü, silme, Excel ve yeniden başlatma sonrası kayıt/oturum kalıcılığı kontrol edilir. Vercel test sunucusu rewrite ve önceden ayrıştırılmış JSON gövdesini taklit eder; gerçek bulut dağıtımının yerine geçmez. Uzak Turso bağlantısını canlı doğrulamak için ilgili ortam değişkenleri gerekir.
 
 Referanslar: [Vercel Node.js Functions](https://vercel.com/docs/functions/runtimes/node-js), [Vercel yapılandırması](https://vercel.com/docs/project-configuration/vercel-json), [Vercel SQLite kısıtı](https://vercel.com/kb/guide/is-sqlite-supported-in-vercel), [Turso HTTP istemcisi](https://docs.turso.tech/sdk/http/quickstart).

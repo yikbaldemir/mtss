@@ -32,7 +32,9 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     assert.equal((await request('/api/students/'+sid,'PUT',profile,guest)).status,403);
     assert.equal((await request('/api/students/'+sid,'PUT',profile,editor)).status,200);
     assert.equal((await request('/api/students/'+sid,'PUT',{...profile,birthDate:'2023-02-31'},editor)).status,400);
-    for(const kind of ['observation','parent'])assert.equal((await request('/api/records','POST',{studentId:sid,kind,teacher:d.teachers[0],day:'1. Gün',date:'2026-09-03',type:'Genel Bilgi',note:'=Örnek & <metin>\nİkinci satır'},guest)).status,201);
+    const form={studentId:sid,teacher:d.teachers[0],day:'1. Gün',date:'2026-09-03',type:'Genel Bilgi',note:'=Örnek & <metin>\nİkinci satır'};
+    assert.equal((await request('/api/records','POST',{...form,kind:'observation'},guest)).status,201);
+    assert.equal((await request('/api/records','POST',{...form,kind:'parent'},guest)).status,400);
     const ids=[];
     for(const kind of ['student','parent']){
       const m={studentId:sid,kind,date:'2026-09-03',participant:'Örnek Katılımcı',subject:'Takip',note:'GİZLİ görüşme notu'};
@@ -51,6 +53,6 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     assert.equal((await request('/api/session','GET',null,guest)).data.role,'guest');
     assert.equal((await request('/api/session','GET',null,editor)).data.role,null);
     const again=(await request('/api/login','POST',{username:'ilaydahisarbeyli',password:'123456'})).cookie;
-    const saved=(await request('/api/data?schoolId=nazmi','GET',null,again)).data;assert.equal(saved.records.length,2);assert.equal(saved.students[0].parentName,'Örnek Veli');assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,again)).data.length,1);
+    const saved=(await request('/api/data?schoolId=nazmi','GET',null,again)).data;assert.equal(saved.records.length,1);assert.equal(saved.students[0].parentName,'Örnek Veli');assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,again)).data.length,1);
   }finally{if(child)await stop();fs.rmSync(dir,{recursive:true,force:true});}
 });

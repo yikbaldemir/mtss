@@ -61,7 +61,7 @@ async function schoolStudents(db, schoolId) {
 }
 async function records(db, schoolId) {
   const ids = schoolClasses(schoolId).map(item => item.id);
-  return (await db.all(`SELECT r.*, s.name AS student, s.classId FROM records r JOIN students s ON s.id=r.studentId WHERE s.classId IN (${placeholders(ids)}) ORDER BY r.createdAt DESC`, ...ids))
+  return (await db.all(`SELECT r.*, s.name AS student, s.classId FROM records r JOIN students s ON s.id=r.studentId WHERE r.kind='observation' AND s.classId IN (${placeholders(ids)}) ORDER BY r.createdAt DESC`, ...ids))
     .map(r => ({ ...r, className: classes.find(c => c.id === r.classId).name }));
 }
 function cookie(req, value, maxAge) {
@@ -143,7 +143,7 @@ async function handler(req, res) {
     }
     if (route === '/api/records' && req.method === 'POST') {
       const b = await body(req); await student(db, b.studentId);
-      if (!['observation', 'parent'].includes(b.kind)) fail(400, 'Form türü geçersiz.');
+      if (b.kind !== 'observation') fail(400, 'Form türü geçersiz.');
       if (!teachers.includes(b.teacher)) fail(400, 'Öğretmen seçin.');
       const id = crypto.randomUUID();
       await db.run('INSERT INTO records VALUES(?,?,?,?,?,?,?,?,?)', id, b.studentId, b.kind, b.teacher, b.kind === 'observation' ? required(b.day, 'Gün', 30) : '', date(b.date), required(b.type, 'Tür', 100), required(b.note, 'Form içeriği'), new Date().toISOString());
@@ -173,7 +173,7 @@ async function handler(req, res) {
       editor(s);
       const school = selectedSchool(url.searchParams.get('schoolId') || schools[0].id);
       const rows = (await records(db, school.id)).filter(r => (!url.searchParams.get('classId') || r.classId === url.searchParams.get('classId')) && (!url.searchParams.get('teacher') || r.teacher === url.searchParams.get('teacher')) && (!url.searchParams.get('q') || `${r.student} ${r.note} ${r.type}`.toLocaleLowerCase('tr').includes(url.searchParams.get('q').toLocaleLowerCase('tr'))));
-      const bytes = workbook([['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Gün', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, r.kind === 'parent' ? 'Veli bilgisi' : 'Öğretmen gözlem formu', r.teacher, r.day, r.date, r.type, r.note])]);
+      const bytes = workbook([['Sınıf', 'Öğrenci', 'Form', 'Öğretmen', 'Gün', 'Tarih', 'Tür', 'Açıklama'], ...rows.map(r => [r.className, r.student, 'Öğretmen gözlem formu', r.teacher, r.day, r.date, r.type, r.note])]);
       res.writeHead(200, { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': 'attachment; filename="rehberlik-kayitlari.xlsx"' });
       return res.end(bytes);
     }
