@@ -1,6 +1,6 @@
 # MTSS · Öğrenci Takip Sistemi
 
-Girişten sonra Kağıthane Nazmi Arıkan İlkokulu veya Kağıthane Atagen İlkokulu seçilir. İki okulun sınıfları, öğrencileri, formları, görüşmeleri ve Excel çıktıları birbirinden ayrı gösterilir. Gerçek öğrenci listeleri eklenene kadar her sınıfta 10 geçici örnek öğrenci vardır.
+Girişten sonra yetkili olunan okul seçilir. İki okulun sınıfları, öğrencileri, formları, görüşmeleri ve Excel çıktıları birbirinden ayrı gösterilir. Düzenleyici menüsündeki Görüşme Takip bölümünde bireysel görüşme veya grup çalışması kaydedilir; grup kaydı seçilen tüm öğrencilerin profilinde görünür. Takvim bölümünde tamamlanan görüşmeler izlenir ve tarih-saatli görüşme randevuları eklenir. Gerçek öğrenci listeleri eklenene kadar her sınıfta 10 geçici örnek öğrenci vardır.
 
 ## Yerelde çalıştırma
 
@@ -40,7 +40,7 @@ Yerel veritabanınız otomatik olarak internete yüklenmez. Vercel'deki veritaba
 - `public/app.js`: yalnızca tarayıcıda çalışan DOM kodu. Node.js tarafından import edilmez.
 - `api/index.mjs`: Vercel'in çalıştırdığı sunucu fonksiyonu; port dinlemez.
 - `server/handler.cjs`: yerel sunucunun ve Vercel'in paylaştığı API/yetki mantığı.
-- `server/database.cjs`: yerelde SQLite, Vercel'de HTTP üzerinden Turso/libSQL.
+- `server/database.cjs`: yerelde SQLite, Vercel'de HTTP üzerinden Turso/libSQL; görüşme ve randevularla öğrenciler arasındaki çoklu bağlantıyı saklar.
 - `server/local.cjs`: yerel HTTP sunucusu ve statik dosya servisi.
 - `seed.cjs`: okul, sınıf, geçici öğrenci ve öğretmen tanımları.
 - `vercel.json`: yalnızca `public` dizinini statik yayınlar; `/api/*` isteklerini API fonksiyonuna gönderir. `/preview.html` adresi korunur.
@@ -48,7 +48,7 @@ Yerel veritabanınız otomatik olarak internete yüklenmez. Vercel'deki veritaba
 
 ## Korunan işlevler
 
-Misafirler öğrenci profillerini görüntüler; Gözlem Formu ile 21 ölçütlü MTSS Öğrenci Takip Formuna yanıt ekleyebilir. Gözlem Formu; gözlem türünü, gözlemin ne zamandır ve ne sıklıkta yapıldığını, daha önce uygulanan yaklaşımı ve değerlendirmeyi kaydeder. MTSS Öğrenci Takip Formundaki her ölçüt 1–4 veya G seçeneğiyle tek tıklamayla işaretlenir; kaydedilen yanıtlarda soru metniyle puanın açıklaması birlikte gösterilir. Düzenleyici, Tüm Değerlendirmeler ekranında formları ayrı ayrı seçebilir ve seçili forma özel Excel çıktısı alabilir. Excel'de her doldurulan form tek satırdır; MTSS ölçütlerinin cevapları aynı satırdaki ayrı sütunlarda yer alır. Misafirler kaydedilmiş form yanıtlarını, Tüm Değerlendirmeler ekranını ve Excel çıktısını göremez. Kişisel bilgileri yalnızca düzenleyici değiştirir. Öğrenci ve veli görüşmelerini yalnızca düzenleyici okuyabilir, ekleyebilir ve silebilir; misafirlere veya Excel çıktısına gönderilmez.
+Misafirler öğrenci profillerini görüntüler; Gözlem Formu ile 21 ölçütlü MTSS Öğrenci Takip Formuna yanıt ekleyebilir. Gözlem Formu; gözlem türünü, gözlemin ne zamandır ve ne sıklıkta yapıldığını, daha önce uygulanan yaklaşımı ve değerlendirmeyi kaydeder. MTSS Öğrenci Takip Formundaki her ölçüt 1–4 veya G seçeneğiyle tek tıklamayla işaretlenir; kaydedilen yanıtlarda soru metniyle puanın açıklaması birlikte gösterilir. Düzenleyici, Tüm Değerlendirmeler ekranında formları ayrı ayrı seçebilir ve seçili forma özel Excel çıktısı alabilir. Excel'de her doldurulan form tek satırdır; MTSS ölçütlerinin cevapları aynı satırdaki ayrı sütunlarda yer alır. Misafirler kaydedilmiş form yanıtlarını, Tüm Değerlendirmeler ekranını, görüşmeleri, takvimi ve Excel çıktısını göremez. Kişisel bilgileri yalnızca düzenleyici değiştirir. Öğrenci ve veli görüşmelerini yalnızca yetkili düzenleyici okuyabilir, ekleyebilir ve silebilir; grup çalışması tek kayıt olarak seçilen öğrencilerin profillerine bağlanır. Görüşmeler ve randevular Excel çıktısına gönderilmez.
 
 Oturumlar 8 saat geçerlidir. Sınırlı düzenleyicilerin yetkileri öğrenci profili, kayıtlı form yanıtı, görüşme ve Excel uçlarında sunucu tarafından sınıf bazında doğrulanır. Oturumlar ve giriş deneme sınırı paylaşılan veritabanındadır; yeniden başlatma veya başka Vercel fonksiyon örneği oturumu kaybettirmez. Çıkış, oturumu tüm örnekler için iptal eder. Vercel çerezleri `HttpOnly`, `SameSite=Strict` ve `Secure` kullanır.
 

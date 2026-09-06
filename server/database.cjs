@@ -52,17 +52,23 @@ async function initialize(db, env = process.env) {
     'CREATE TABLE IF NOT EXISTS students(id TEXT PRIMARY KEY, classId TEXT, name TEXT, birthDate TEXT, gender TEXT, parentName TEXT, phone TEXT)',
     'CREATE TABLE IF NOT EXISTS records(id TEXT PRIMARY KEY, studentId TEXT, kind TEXT, teacher TEXT, day TEXT, date TEXT, type TEXT, note TEXT, createdAt TEXT)',
     'CREATE TABLE IF NOT EXISTS meetings(id TEXT PRIMARY KEY, studentId TEXT, kind TEXT, date TEXT, participant TEXT, subject TEXT, note TEXT, createdAt TEXT)',
+    'CREATE TABLE IF NOT EXISTS interviews(id TEXT PRIMARY KEY, kind TEXT NOT NULL, format TEXT NOT NULL, status TEXT NOT NULL, date TEXT NOT NULL, time TEXT NOT NULL, participant TEXT NOT NULL, subject TEXT NOT NULL, note TEXT NOT NULL, createdBy TEXT NOT NULL, createdAt TEXT NOT NULL)',
+    'CREATE TABLE IF NOT EXISTS interview_students(interviewId TEXT NOT NULL, studentId TEXT NOT NULL, isPrimary INTEGER NOT NULL, PRIMARY KEY(interviewId,studentId))',
     'CREATE TABLE IF NOT EXISTS sessions(tokenHash TEXT PRIMARY KEY, role TEXT NOT NULL, expires INTEGER NOT NULL)',
     'CREATE TABLE IF NOT EXISTS sessions_v2(tokenHash TEXT PRIMARY KEY, role TEXT NOT NULL, username TEXT NOT NULL, expires INTEGER NOT NULL)',
     'CREATE TABLE IF NOT EXISTS login_attempts(key TEXT PRIMARY KEY, count INTEGER NOT NULL, until INTEGER NOT NULL)',
     'CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires)',
-    'CREATE INDEX IF NOT EXISTS sessions_v2_expiry ON sessions_v2(expires)'
+    'CREATE INDEX IF NOT EXISTS sessions_v2_expiry ON sessions_v2(expires)',
+    'CREATE INDEX IF NOT EXISTS interview_students_student ON interview_students(studentId)',
+    'CREATE INDEX IF NOT EXISTS interviews_date ON interviews(date)'
   ]);
   await db.batch(classes.filter(c => c.legacyId).map(c => ({
     sql: 'UPDATE students SET classId=? WHERE classId=?',
     args: [c.id, c.legacyId]
   })));
   await db.run("UPDATE records SET type='MTSS Öğrenci Takip Formu' WHERE kind='rubric'");
+  await db.run("INSERT OR IGNORE INTO interviews(id,kind,format,status,date,time,participant,subject,note,createdBy,createdAt) SELECT id,kind,'individual','completed',date,'',participant,subject,note,'',createdAt FROM meetings");
+  await db.run('INSERT OR IGNORE INTO interview_students(interviewId,studentId,isPrimary) SELECT id,studentId,1 FROM meetings');
   for (const profile of editorProfiles) {
     if (await db.get('SELECT 1 FROM accounts WHERE username=?', profile.username)) continue;
     const configuredPassword = env[profile.passwordEnv];

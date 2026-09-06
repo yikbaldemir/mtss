@@ -174,6 +174,40 @@
     .stat strong{font-size:27px;display:block;margin-bottom:3px}
     .stat span{color:var(--muted);font-size:13px}
     .back{display:inline-flex;align-items:center;gap:7px;margin-bottom:16px;color:#475569;background:transparent;border:0;padding:0}
+    .tracking-layout{grid-template-columns:minmax(340px,460px) minmax(0,1fr);align-items:start}
+    .student-check-list{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+    .student-check-group{border:0;padding:0 0 12px;margin:0 0 12px;border-bottom:1px solid var(--line)}
+    .student-check-group:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+    .student-check-group legend{font-weight:750;font-size:13px;margin-bottom:8px}
+    .student-check-group label{display:flex;gap:7px;align-items:center;padding:5px 0;font-size:13px;cursor:pointer}
+    .interview-list{display:grid;gap:10px}
+    .interview-row{overflow:hidden}
+    .interview-row>summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 17px;cursor:pointer;list-style:none}
+    .interview-row>summary::-webkit-details-marker{display:none}
+    .interview-row>summary strong,.interview-row>summary small{display:block}
+    .interview-row>summary small{color:var(--muted);margin-top:4px}
+    .interview-summary-meta{text-align:right;white-space:nowrap}
+    .interview-row[open]>summary{background:#f8fafc;border-bottom:1px solid var(--line)}
+    .interview-row-content{padding:16px;display:grid;gap:12px}
+    .interview-row-content p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+    .interview-row-content p strong{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+    .appointment-form{margin-bottom:22px}
+    .calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}
+    .calendar-toolbar h3{margin:0;text-transform:capitalize}
+    .calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(120px,1fr));border:1px solid var(--line);border-radius:16px;overflow:auto;background:white}
+    .calendar-weekday{padding:10px;text-align:center;background:#f8fafc;color:var(--muted);font-size:12px;font-weight:750;border-bottom:1px solid var(--line)}
+    .calendar-day{min-height:125px;padding:9px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .calendar-day:nth-child(7n){border-right:0}
+    .calendar-day.outside{background:#f8fafc}
+    .calendar-day.today>b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--primary);color:white}
+    .calendar-events{display:grid;gap:5px;margin-top:7px}
+    .calendar-event{padding:6px 7px;border-radius:8px;font-size:11px;line-height:1.3;overflow:hidden}
+    .calendar-event strong,.calendar-event span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .calendar-event.completed{background:#dcfce7;color:#166534}
+    .calendar-event.appointment{background:#dbeafe;color:#1e40af}
+    .calendar-legend{display:flex;gap:18px;margin-top:12px;color:var(--muted);font-size:12px}
+    .calendar-legend span{display:flex;align-items:center;gap:6px}
+    .calendar-legend i{width:12px;height:12px;border-radius:4px}.calendar-legend i.completed{background:#86efac}.calendar-legend i.appointment{background:#93c5fd}
     .toast{
       position:fixed;right:24px;bottom:24px;background:#111827;color:white;
       border-radius:12px;padding:12px 16px;box-shadow:var(--shadow);display:none;z-index:30;
@@ -182,6 +216,7 @@
       .class-grid{grid-template-columns:repeat(2,1fr)}
       .students-grid{grid-template-columns:repeat(3,1fr)}
       .profile-layout{grid-template-columns:1fr}
+      .tracking-layout{grid-template-columns:1fr}
       .stats{grid-template-columns:repeat(2,1fr)}
     }
     @media(max-width:760px){
@@ -194,6 +229,7 @@
       .class-grid,.students-grid,.stats{grid-template-columns:1fr}
       .form-grid{grid-template-columns:1fr}
       .scale-legend{grid-template-columns:1fr 1fr}.rubric-item{grid-template-columns:1fr}
+      .calendar-grid{grid-template-columns:repeat(7,minmax(105px,1fr))}
     }
     @media print{
       .sidebar,.topbar,.toolbar,.back,.btn{display:none!important}
@@ -207,6 +243,6 @@
 </style></head><body>
 <div id="loginView" class="login-wrap"><div class="card login-card"><div class="brand-badge">M</div><h1>MTSS</h1><p class="muted">Öğrenci Takip Sistemi</p><form id="loginForm"><div class="form-group"><label for="username">Kullanıcı adı</label><input class="input" id="username" autocomplete="username" required></div><div class="form-group"><label for="password">Şifre</label><input class="input" id="password" type="password" autocomplete="current-password" required></div><p id="loginError" class="login-error" role="alert"></p><button class="btn" type="submit">Düzenleyici olarak giriş yap</button><button id="guestButton" class="btn secondary" type="button">Misafir olarak gir</button></form><p class="muted small-note">Misafirler öğrenci profillerini ve formları kullanabilir. Görüşmeler yalnızca düzenleyiciye açıktır.</p></div></div>
 <div id="schoolView" class="login-wrap" hidden><section class="card school-card"><div class="brand-badge">M</div><h1>Okul seçin</h1><p class="muted">Devam etmek istediğiniz okulu seçin.</p><div id="schoolOptions" class="school-options"></div><p id="schoolError" class="login-error" role="alert"></p><div class="school-actions"><button class="btn secondary" onclick="logout()">Çıkış yap</button></div></section></div>
-<div id="workspace" class="app" hidden><aside class="sidebar"><div class="brand"><div class="brand-badge">M</div><div><h1>MTSS</h1><span>Öğrenci Takip Sistemi</span></div></div><nav class="nav"><button id="navClasses" class="active" onclick="showClasses()">Sınıflar</button><button id="navEvaluations" onclick="showEvaluations()" hidden>Tüm Değerlendirmeler</button></nav><div class="role-box"><strong id="schoolLabel"></strong><span id="roleLabel"></span><button class="btn secondary" onclick="showSchoolSelection()">Okul değiştir</button><button class="btn secondary" onclick="logout()">Çıkış yap</button></div><div id="schoolSummary" class="sidebar-note"></div></aside><main class="main"><div id="pageError" role="alert"></div><div id="appContent"></div></main></div>
+<div id="workspace" class="app" hidden><aside class="sidebar"><div class="brand"><div class="brand-badge">M</div><div><h1>MTSS</h1><span>Öğrenci Takip Sistemi</span></div></div><nav class="nav"><button id="navClasses" class="active" onclick="showClasses()">Sınıflar</button><button id="navEvaluations" onclick="showEvaluations()" hidden>Tüm Değerlendirmeler</button><button id="navInterviews" onclick="showInterviewTracking()" hidden>Görüşme Takip</button><button id="navCalendar" onclick="showCalendar()" hidden>Takvim</button></nav><div class="role-box"><strong id="schoolLabel"></strong><span id="roleLabel"></span><button class="btn secondary" onclick="showSchoolSelection()">Okul değiştir</button><button class="btn secondary" onclick="logout()">Çıkış yap</button></div><div id="schoolSummary" class="sidebar-note"></div></aside><main class="main"><div id="pageError" role="alert"></div><div id="appContent"></div></main></div>
 <dialog id="deleteDialog" class="delete-dialog"><h3>Görüşme silinsin mi?</h3><p>Bu görüşme kaydı kalıcı olarak kaldırılacak.</p><div class="toolbar"><button class="btn secondary" onclick="document.getElementById('deleteDialog').close()">Vazgeç</button><button id="confirmDelete" class="btn danger">Görüşmeyi sil</button></div></dialog>
 <div class="toast" id="toast" role="status"></div><script src="/app.js"></script></body></html>

@@ -16,6 +16,16 @@ function date(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0, 10) !== value) fail(400, 'Geçerli bir tarih girin.');
   return value;
 }
+function clock(value, mandatory = false) {
+  if (!value && !mandatory) return '';
+  if (typeof value !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) fail(400, 'Görüşme saatini kontrol edin.');
+  return value;
+}
+function optionalText(value, name, max) {
+  if (value === undefined || value === null || value === '') return '';
+  if (typeof value !== 'string' || value.length > max) fail(400, `${name} alanını kontrol edin.`);
+  return value.trim();
+}
 async function body(req) {
   let value;
   try {
@@ -94,6 +104,38 @@ async function records(db, classItems) {
   if (!ids.length) return [];
   return (await db.all(`SELECT r.*, s.name AS student, s.classId FROM records r JOIN students s ON s.id=r.studentId WHERE r.kind IN ('observation','rubric') AND s.classId IN (${placeholders(ids)}) ORDER BY r.createdAt DESC`, ...ids))
     .map(r => ({ ...r, className: classes.find(c => c.id === r.classId).name, displayNote: displayNote(r) }));
+}
+async function scopedInterviews(db, classItems, targetStudentId = '') {
+  const classIds = classItems.map(item => item.id);
+  if (!classIds.length) return [];
+  const links = await db.all(`SELECT l.interviewId,l.studentId,l.isPrimary,s.name,s.classId FROM interview_students l JOIN students s ON s.id=l.studentId WHERE s.classId IN (${placeholders(classIds)}) ORDER BY l.isPrimary DESC,s.name`, ...classIds);
+  const eventIds = [...new Set((targetStudentId ? links.filter(link => link.studentId === targetStudentId) : links).map(link => link.interviewId))];
+  if (!eventIds.length) return [];
+  const events = await db.all(`SELECT * FROM interviews WHERE id IN (${placeholders(eventIds)}) ORDER BY date DESC,time DESC,createdAt DESC`, ...eventIds);
+  return events.map(event => ({ ...event, students: links.filter(link => link.interviewId === event.id).map(link => ({ id: link.studentId, name: link.name, classId: link.classId, isPrimary: Boolean(link.isPrimary) })) }));
+}
+async function createInterview(db, s, value) {
+  editor(s);
+  const studentIds = [...new Set((Array.isArray(value.studentIds) ? value.studentIds : [value.studentId]).filter(id => typeof id === 'string' && id))];
+  if (!studentIds.length || studentIds.length > 40) fail(400, 'Görüşmedeki öğrencileri kontrol edin.');
+  for (const id of studentIds) await student(db, id, s);
+  const status = value.status || 'completed';
+  const format = value.format || 'individual';
+  if (!['completed', 'appointment'].includes(status)) fail(400, 'Görüşme durumunu kontrol edin.');
+  if (!['individual', 'group'].includes(format)) fail(400, 'Görüşme biçimini kontrol edin.');
+  if (format === 'individual' && studentIds.length !== 1) fail(400, 'Bireysel görüşme için bir öğrenci seçin.');
+  if (format === 'group' && studentIds.length < 2) fail(400, 'Grup çalışması için en az iki öğrenci seçin.');
+  if (status === 'appointment' && format !== 'individual') fail(400, 'Randevular bireysel olarak eklenir.');
+  if (!['student', 'parent'].includes(value.kind)) fail(400, 'Görüşme türünü kontrol edin.');
+  const id = crypto.randomUUID(), interviewDate = date(value.date), interviewTime = clock(value.time, status === 'appointment');
+  const subject = required(value.subject, 'Görüşme konusu', 200);
+  const note = status === 'completed' ? required(value.note, 'Görüşme içeriği', 3000) : optionalText(value.note, 'Randevu notu', 3000);
+  const participant = optionalText(value.participant, 'Görüşülen kişi', 200);
+  await db.batch([
+    { sql: 'INSERT INTO interviews VALUES(?,?,?,?,?,?,?,?,?,?,?)', args: [id, value.kind, format, status, interviewDate, interviewTime, participant, subject, note, s.username, new Date().toISOString()] },
+    ...studentIds.map((studentId, index) => ({ sql: 'INSERT INTO interview_students VALUES(?,?,?)', args: [id, studentId, index === 0 ? 1 : 0] }))
+  ]);
+  return id;
 }
 function cookie(req, value, maxAge) {
   const secure = process.env.VERCEL || req.socket?.encrypted;
@@ -201,26 +243,43 @@ async function handler(req, res) {
       await db.run('INSERT INTO records VALUES(?,?,?,?,?,?,?,?,?)', id, b.studentId, b.kind, b.teacher, day, date(b.date), type, note, new Date().toISOString());
       return json(res, 201, { id });
     }
-    if (route === '/api/meetings') {
+    if (route === '/api/interviews') {
       editor(s);
       if (req.method === 'GET') {
-        const id = url.searchParams.get('studentId'); await student(db, id, s);
-        return json(res, 200, await db.all('SELECT * FROM meetings WHERE studentId=? ORDER BY date DESC,createdAt DESC', id));
+        const school = selectedSchool(url.searchParams.get('schoolId') || schools[0].id);
+        const allowedClasses = visibleClasses(s, school.id);
+        if (!allowedClasses.length) fail(403, 'Bu okulda erişebileceğiniz bir sınıf yok.');
+        return json(res, 200, await scopedInterviews(db, allowedClasses));
       }
       if (req.method === 'POST') {
-        const b = await body(req); await student(db, b.studentId, s);
-        if (!['student', 'parent'].includes(b.kind)) fail(400, 'Görüşme türü geçersiz.');
-        const id = crypto.randomUUID();
-        await db.run('INSERT INTO meetings VALUES(?,?,?,?,?,?,?,?)', id, b.studentId, b.kind, date(b.date), required(b.participant, 'Katılımcı', 200), required(b.subject, 'Konu', 200), required(b.note, 'Görüşme notu'), new Date().toISOString());
+        const id = await createInterview(db, s, await body(req));
         return json(res, 201, { id });
       }
     }
-    const mm = route.match(/^\/api\/meetings\/([^/]+)$/);
+    if (route === '/api/meetings') {
+      editor(s);
+      if (req.method === 'GET') {
+        const id = url.searchParams.get('studentId'), target = await student(db, id, s);
+        const classItem = classes.find(item => item.id === target.classId);
+        return json(res, 200, await scopedInterviews(db, visibleClasses(s, classItem.schoolId), id));
+      }
+      if (req.method === 'POST') {
+        const b = await body(req);
+        const id = await createInterview(db, s, { ...b, studentIds: [b.studentId], format: 'individual', status: 'completed' });
+        return json(res, 201, { id });
+      }
+    }
+    const mm = route.match(/^\/api\/(?:meetings|interviews)\/([^/]+)$/);
     if (mm && req.method === 'DELETE') {
-      editor(s); const meeting = await db.get('SELECT studentId FROM meetings WHERE id=?', mm[1]);
-      if (!meeting) fail(404, 'Görüşme bulunamadı.');
-      await student(db, meeting.studentId, s);
-      await db.run('DELETE FROM meetings WHERE id=?', mm[1]);
+      editor(s); const event = await db.get('SELECT id FROM interviews WHERE id=?', mm[1]);
+      if (!event) fail(404, 'Görüşme bulunamadı.');
+      const participants = await db.all('SELECT studentId FROM interview_students WHERE interviewId=?', mm[1]);
+      for (const participant of participants) await student(db, participant.studentId, s);
+      await db.batch([
+        { sql: 'DELETE FROM interview_students WHERE interviewId=?', args: [mm[1]] },
+        { sql: 'DELETE FROM interviews WHERE id=?', args: [mm[1]] },
+        { sql: 'DELETE FROM meetings WHERE id=?', args: [mm[1]] }
+      ]);
       return json(res, 200, { ok: true });
     }
     if (route === '/api/export' && req.method === 'GET') {
