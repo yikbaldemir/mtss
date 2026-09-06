@@ -1,5 +1,5 @@
 const schools = [
-  { id: 'nazmi', name: 'Kağıthane Nazmi Arıkan İlkokulu' },
+  { id: 'nazmi', name: 'Kağıthane Nazmi Arıkan Fen Bilimleri İlkokulu' },
   { id: 'atagen', name: 'Kağıthane Atagen İlkokulu' }
 ];
 

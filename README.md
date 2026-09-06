@@ -16,9 +16,9 @@ http://localhost:3000 adresini açın. `Baslat.cmd` de aynı uygulamayı başlat
 Düzenleyici hesapları ve erişimleri:
 
 - `ilaydahisarbeyli`: Her iki okul ve tüm kademeler.
-- `tugbasaygi`: Yalnızca Kağıthane Nazmi Arıkan İlkokulunda Fen Bilimleri, anaokulu kademesi.
-- `kubrakaban`: Yalnızca Kağıthane Nazmi Arıkan İlkokulunda Fen Bilimleri, 1. ve 2. sınıflar.
-- `selinak`: Yalnızca Kağıthane Nazmi Arıkan İlkokulunda Fen Bilimleri, 3. ve 4. sınıflar.
+- `tugbasaygi`: Yalnızca Kağıthane Nazmi Arıkan Fen Bilimleri İlkokulunda anaokulu kademesi.
+- `kubrakaban`: Yalnızca Kağıthane Nazmi Arıkan Fen Bilimleri İlkokulunda 1. ve 2. sınıflar.
+- `selinak`: Yalnızca Kağıthane Nazmi Arıkan Fen Bilimleri İlkokulunda 3. ve 4. sınıflar.
 
 Boş veritabanında İlayda hesabının ilk şifresi `123456` olur. İlk kurulum şifreleri `EDITOR_PASSWORD`, `TUGBA_EDITOR_PASSWORD`, `KUBRA_EDITOR_PASSWORD` ve `SELIN_EDITOR_PASSWORD` ortam değişkenleriyle değiştirilebilir. Bu değişkenler yalnızca veritabanında henüz bulunmayan hesabı oluştururken kullanılır; mevcut hesabın şifresini değiştirmez.
 

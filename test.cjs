@@ -66,14 +66,14 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     }
     assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,editor)).data.length,2);
     const secondPreschoolSid=d.students.find(student=>student.classId===d.students[0].classId&&student.id!==sid).id;
-    const group={studentIds:[sid,secondPreschoolSid],kind:'student',format:'group',status:'completed',date:'2026-09-04',subject:'Sosyal beceri grubu',note:'Sıra alma çalışması yapıldı.'};
+    const group={studentIds:[sid,secondPreschoolSid],kind:'student',format:'group',status:'completed',date:'2026-09-04',subject:'Sosyal-Duygusal',note:'Sıra alma çalışması yapıldı.'};
     assert.equal((await request('/api/interviews','POST',group,guest)).status,403);
     const groupCreated=await request('/api/interviews','POST',group,tugba);assert.equal(groupCreated.status,201);
     assert.equal((await request('/api/interviews','POST',{...group,studentIds:[sid]},tugba)).status,400);
     assert.equal((await request('/api/interviews','POST',{...group,studentIds:[sid,firstGradeSid]},tugba)).status,403);
     assert.ok((await request('/api/meetings?studentId='+sid,'GET',null,tugba)).data.some(item=>item.id===groupCreated.data.id&&item.students.length===2));
     assert.ok((await request('/api/meetings?studentId='+secondPreschoolSid,'GET',null,tugba)).data.some(item=>item.id===groupCreated.data.id));
-    const appointment={studentIds:[firstGradeSid],kind:'parent',format:'individual',status:'appointment',date:'2026-09-10',time:'14:30',subject:'Veli takip randevusu',note:'Kısa hazırlık notu'};
+    const appointment={studentIds:[firstGradeSid],kind:'parent',format:'individual',status:'appointment',date:'2026-09-10',time:'14:30',subject:'Genel Görüşme',note:'Kısa hazırlık notu'};
     assert.equal((await request('/api/interviews','POST',{...appointment,time:''},kubra)).status,400);
     const appointmentCreated=await request('/api/interviews','POST',appointment,kubra);assert.equal(appointmentCreated.status,201);
     const allInterviews=(await request('/api/interviews?schoolId=nazmi','GET',null,editor)).data;assert.equal(allInterviews.length,4);assert.ok(allInterviews.some(item=>item.id===appointmentCreated.data.id&&item.status==='appointment'));

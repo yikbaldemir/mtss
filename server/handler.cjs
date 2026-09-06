@@ -4,6 +4,7 @@ const { rubricScale, rubricCriteria, rubricSections } = require('./observation-f
 const { workbook } = require('../xlsx.cjs');
 const { getDatabase } = require('./database.cjs');
 const { editorProfile, canAccessClass, publicEditorProfile } = require('./editor-accounts.cjs');
+const interviewSubjects = ['Genel Görüşme', 'Akademik', 'Sosyal-Duygusal', 'Davranış', 'Akran İlişkileri', 'Uyum Süreci', 'Devamsızlık / Okula Katılım', 'Diğer'];
 
 function json(res, status, value) { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(value)); }
 function fail(status, message) { throw Object.assign(new Error(message), { status }); }
@@ -129,6 +130,7 @@ async function createInterview(db, s, value) {
   if (!['student', 'parent'].includes(value.kind)) fail(400, 'Görüşme türünü kontrol edin.');
   const id = crypto.randomUUID(), interviewDate = date(value.date), interviewTime = clock(value.time, status === 'appointment');
   const subject = required(value.subject, 'Görüşme konusu', 200);
+  if (!value.allowCustomSubject && !interviewSubjects.includes(subject)) fail(400, 'Görüşme konusunu kontrol edin.');
   const note = status === 'completed' ? required(value.note, 'Görüşme içeriği', 3000) : optionalText(value.note, 'Randevu notu', 3000);
   const participant = optionalText(value.participant, 'Görüşülen kişi', 200);
   await db.batch([
@@ -265,7 +267,7 @@ async function handler(req, res) {
       }
       if (req.method === 'POST') {
         const b = await body(req);
-        const id = await createInterview(db, s, { ...b, studentIds: [b.studentId], format: 'individual', status: 'completed' });
+        const id = await createInterview(db, s, { ...b, studentIds: [b.studentId], format: 'individual', status: 'completed', allowCustomSubject: true });
         return json(res, 201, { id });
       }
     }
