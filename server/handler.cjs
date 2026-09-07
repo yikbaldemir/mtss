@@ -5,6 +5,13 @@ const { workbook } = require('../xlsx.cjs');
 const { getDatabase } = require('./database.cjs');
 const { editorProfile, canAccessClass, publicEditorProfile } = require('./editor-accounts.cjs');
 const interviewSubjects = ['Genel Görüşme', 'Akademik', 'Sosyal-Duygusal', 'Davranış', 'Akran İlişkileri', 'Uyum Süreci', 'Devamsızlık / Okula Katılım', 'Diğer'];
+const parentRelationships = ['Anne', 'Baba', 'Vasi / Diğer'];
+const parentFormQuestions = [
+  { id: 'strengths', label: 'Çocuğunuzun güçlü yönleri nelerdir?', required: true, max: 2000 },
+  { id: 'supportNeeds', label: 'En çok hangi alanlarda desteğe ihtiyaç duyuyor?', required: true, max: 2000 },
+  { id: 'homeRoutine', label: 'Evdeki ders ve etkinlik çalışma düzenini kısaca anlatır mısınız?', required: true, max: 2000 },
+  { id: 'schoolNotes', label: 'Okulla paylaşmak istediğiniz başka bir bilgi var mı?', required: false, max: 3000 }
+];
 
 function json(res, status, value) { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(value)); }
 function fail(status, message) { throw Object.assign(new Error(message), { status }); }
@@ -26,6 +33,9 @@ function optionalText(value, name, max) {
   if (value === undefined || value === null || value === '') return '';
   if (typeof value !== 'string' || value.length > max) fail(400, `${name} alanını kontrol edin.`);
   return value.trim();
+}
+function normalizeLookup(value) {
+  return String(value || '').trim().toLocaleLowerCase('tr').replaceAll('ı', 'i').replaceAll('ş', 's').replaceAll('ğ', 'g').replaceAll('ü', 'u').replaceAll('ö', 'o').replaceAll('ç', 'c').replace(/[^a-z0-9]+/g, '');
 }
 async function body(req) {
   let value;
@@ -149,6 +159,14 @@ function setHeaders(res) {
   res.setHeader('Referrer-Policy', 'same-origin');
   res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
 }
+function publicParentFormSetup() {
+  return { schools: schools.map(({ id, name }) => ({ id, name })), relationships: parentRelationships, questions: parentFormQuestions.map(({ id, label, required }) => ({ id, label, required })) };
+}
+function parseParentFormAnswers(raw) {
+  let value = {};
+  try { value = JSON.parse(raw); } catch {}
+  return parentFormQuestions.map(question => ({ id: question.id, label: question.label, value: typeof value[question.id] === 'string' ? value[question.id] : '' }));
+}
 async function handler(req, res) {
   setHeaders(res);
   try {
@@ -165,6 +183,25 @@ async function handler(req, res) {
     // Lazy initialization: importing the function never opens SQLite or accesses the DOM.
     const db = await getDatabase();
     const s = await session(req, db);
+    if (route === '/api/parent-form' && req.method === 'GET') return json(res, 200, publicParentFormSetup());
+    if (route === '/api/parent-form' && req.method === 'POST') {
+      const b = await body(req);
+      if (b.website) return json(res, 201, { ok: true });
+      const school = selectedSchool(b.schoolId);
+      const className = required(b.className, 'Sınıf', 100), studentName = required(b.studentName, 'Öğrenci adı', 200);
+      const classItem = classes.find(item => item.schoolId === school.id && normalizeLookup(item.name) === normalizeLookup(className));
+      const candidates = classItem ? await db.all('SELECT id,name FROM students WHERE classId=?', classItem.id) : [];
+      const matches = candidates.filter(item => normalizeLookup(item.name) === normalizeLookup(studentName));
+      if (!classItem || matches.length !== 1) fail(404, 'Okul, sınıf veya öğrenci adı kayıtlarla eşleşmedi. Lütfen bilgileri kontrol edin.');
+      const respondentName = required(b.respondentName, 'Veli adı soyadı', 200);
+      if (!parentRelationships.includes(b.relationship)) fail(400, 'Yakınlık seçimini kontrol edin.');
+      if (!b.answers || typeof b.answers !== 'object' || Array.isArray(b.answers)) fail(400, 'Form yanıtlarını kontrol edin.');
+      const answers = {};
+      for (const question of parentFormQuestions) answers[question.id] = question.required ? required(b.answers[question.id], question.label, question.max) : optionalText(b.answers[question.id], question.label, question.max);
+      const id = crypto.randomUUID();
+      await db.run('INSERT INTO parent_forms VALUES(?,?,?,?,?,?)', id, matches[0].id, respondentName, b.relationship, JSON.stringify(answers), new Date().toISOString());
+      return json(res, 201, { ok: true });
+    }
     if (route === '/api/session' && req.method === 'GET') return json(res, 200, { role: s?.role || null, user: s?.role === 'editor' ? publicEditorProfile(s.username) : null });
     if (route === '/api/login' && req.method === 'POST') {
       const b = await body(req); let role = 'guest', username = '';
@@ -244,6 +281,12 @@ async function handler(req, res) {
       const id = crypto.randomUUID();
       await db.run('INSERT INTO records VALUES(?,?,?,?,?,?,?,?,?)', id, b.studentId, b.kind, b.teacher, day, date(b.date), type, note, new Date().toISOString());
       return json(res, 201, { id });
+    }
+    if (route === '/api/parent-forms' && req.method === 'GET') {
+      editor(s);
+      const target = await student(db, url.searchParams.get('studentId'), s);
+      const rows = await db.all('SELECT * FROM parent_forms WHERE studentId=? ORDER BY createdAt DESC', target.id);
+      return json(res, 200, rows.map(row => ({ id: row.id, respondentName: row.respondentName, relationship: row.relationship, createdAt: row.createdAt, answers: parseParentFormAnswers(row.answers) })));
     }
     if (route === '/api/interviews') {
       editor(s);

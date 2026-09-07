@@ -2,7 +2,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const handler = require('./handler.cjs');
-const files = { '/': 'index.html', '/index.html': 'index.html', '/preview.html': 'index.html', '/app.js': 'app.js' };
+const files = { '/': 'index.html', '/index.html': 'index.html', '/preview.html': 'index.html', '/app.js': 'app.js', '/veli-formu': 'veli-formu.html', '/veli-formu.html': 'veli-formu.html', '/veli-formu.js': 'veli-formu.js' };
 const server = http.createServer((req, res) => {
   const route = new URL(req.url, 'http://localhost').pathname;
   if (route.startsWith('/api/')) return handler(req, res);
@@ -11,7 +11,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     return res.end('Sayfa bulunamadı.');
   }
-  res.setHeader('Content-Type', route === '/app.js' ? 'text/javascript; charset=utf-8' : 'text/html; charset=utf-8');
+  res.setHeader('Content-Type', route.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'text/html; charset=utf-8');
   if (req.method === 'HEAD') return res.end();
   res.end(fs.readFileSync(path.join(__dirname, '..', 'public', files[route])));
 });

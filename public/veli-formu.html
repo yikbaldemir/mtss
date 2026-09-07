@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Veli Bilgi Formu</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;background:#f2f5fb;line-height:1.5}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at top left,#dfe8ff,transparent 42%),#f2f5fb}
+    main{width:min(720px,calc(100% - 32px));margin:44px auto;padding-bottom:44px}
+    .form-card,.success-card{background:#fff;border:1px solid #e4e8f0;border-radius:20px;box-shadow:0 18px 45px rgba(31,43,75,.09);padding:32px}
+    h1{font-size:28px;margin:0 0 8px}
+    h2{font-size:18px;margin:30px 0 14px;padding-top:24px;border-top:1px solid #e8ebf2}
+    p{margin:0;color:#667085}
+    form{margin-top:28px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .field{display:grid;gap:7px}
+    .full{grid-column:1/-1}
+    label{font-size:14px;font-weight:700;color:#2a3345}
+    input,select,textarea{width:100%;font:inherit;color:#172033;background:#fff;border:1px solid #d8deea;border-radius:11px;padding:12px 13px;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:#4263dc;box-shadow:0 0 0 3px #dce4ff}
+    textarea{min-height:112px;resize:vertical}
+    button{border:0;border-radius:11px;background:#3459d1;color:#fff;font:inherit;font-weight:750;padding:13px 20px;cursor:pointer}
+    button:disabled{opacity:.6;cursor:wait}
+    .actions{display:flex;align-items:center;gap:14px;margin-top:24px}
+    .error{color:#b42318;font-size:14px;min-height:22px;margin-top:14px}
+    .hint{font-size:13px;margin-top:6px}
+    .success-card{text-align:center;padding:48px 32px}
+    .success-mark{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#dcfce7;color:#15803d;font-size:30px;font-weight:800;margin:0 auto 18px}
+    .success-card h1{font-size:24px}
+    .success-card button{margin-top:24px}
+    .trap{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important}
+    [hidden]{display:none!important}
+    @media(max-width:620px){main{margin:20px auto}.form-card{padding:22px}.grid{grid-template-columns:1fr}.full{grid-column:auto}h1{font-size:24px}.actions{align-items:stretch;flex-direction:column}.actions button{width:100%}}
+  </style>
+</head>
+<body>
+  <main>
+    <section id="formCard" class="form-card">
+      <h1>Veli Bilgi Formu</h1>
+      <p>Bilgileri öğrenciniz için eksiksiz doldurunuz.</p>
+      <form id="parentForm">
+        <div class="grid">
+          <div class="field full"><label for="schoolId">Okul</label><select id="schoolId" required><option value="">Okul seçin</option></select></div>
+          <div class="field"><label for="className">Öğrencinin sınıfı</label><input id="className" maxlength="100" placeholder="Örn. 2-A" autocomplete="off" required><span class="hint">Sınıfı okulda kullanıldığı biçimiyle yazın.</span></div>
+          <div class="field"><label for="studentName">Öğrencinin adı soyadı</label><input id="studentName" maxlength="200" autocomplete="name" required></div>
+          <div class="field"><label for="respondentName">Veli adı soyadı</label><input id="respondentName" maxlength="200" autocomplete="name" required></div>
+          <div class="field"><label for="relationship">Öğrenciye yakınlığı</label><select id="relationship" required><option value="">Seçin</option></select></div>
+          <div class="trap" aria-hidden="true"><label for="website">Bu alanı boş bırakın</label><input id="website" tabindex="-1" autocomplete="off"></div>
+        </div>
+        <h2>Form Soruları</h2>
+        <div id="questions" class="grid"></div>
+        <div class="actions"><button id="submitButton" type="submit">Formu gönder</button></div>
+        <p id="formError" class="error" role="alert"></p>
+      </form>
+    </section>
+    <section id="successCard" class="success-card" hidden>
+      <div class="success-mark">✓</div>
+      <h1>Formunuz kaydedildi</h1>
+      <p>Bilgileriniz ilgili öğrenci kaydına iletildi.</p>
+      <button id="newFormButton" type="button">Yeni form doldur</button>
+    </section>
+  </main>
+  <script src="/veli-formu.js"></script>
+</body>
+</html>

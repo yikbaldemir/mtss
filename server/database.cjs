@@ -54,12 +54,14 @@ async function initialize(db, env = process.env) {
     'CREATE TABLE IF NOT EXISTS meetings(id TEXT PRIMARY KEY, studentId TEXT, kind TEXT, date TEXT, participant TEXT, subject TEXT, note TEXT, createdAt TEXT)',
     'CREATE TABLE IF NOT EXISTS interviews(id TEXT PRIMARY KEY, kind TEXT NOT NULL, format TEXT NOT NULL, status TEXT NOT NULL, date TEXT NOT NULL, time TEXT NOT NULL, participant TEXT NOT NULL, subject TEXT NOT NULL, note TEXT NOT NULL, createdBy TEXT NOT NULL, createdAt TEXT NOT NULL)',
     'CREATE TABLE IF NOT EXISTS interview_students(interviewId TEXT NOT NULL, studentId TEXT NOT NULL, isPrimary INTEGER NOT NULL, PRIMARY KEY(interviewId,studentId))',
+    'CREATE TABLE IF NOT EXISTS parent_forms(id TEXT PRIMARY KEY, studentId TEXT NOT NULL, respondentName TEXT NOT NULL, relationship TEXT NOT NULL, answers TEXT NOT NULL, createdAt TEXT NOT NULL)',
     'CREATE TABLE IF NOT EXISTS sessions(tokenHash TEXT PRIMARY KEY, role TEXT NOT NULL, expires INTEGER NOT NULL)',
     'CREATE TABLE IF NOT EXISTS sessions_v2(tokenHash TEXT PRIMARY KEY, role TEXT NOT NULL, username TEXT NOT NULL, expires INTEGER NOT NULL)',
     'CREATE TABLE IF NOT EXISTS login_attempts(key TEXT PRIMARY KEY, count INTEGER NOT NULL, until INTEGER NOT NULL)',
     'CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires)',
     'CREATE INDEX IF NOT EXISTS sessions_v2_expiry ON sessions_v2(expires)',
     'CREATE INDEX IF NOT EXISTS interview_students_student ON interview_students(studentId)',
+    'CREATE INDEX IF NOT EXISTS parent_forms_student ON parent_forms(studentId)',
     'CREATE INDEX IF NOT EXISTS interviews_date ON interviews(date)'
   ]);
   await db.batch(classes.filter(c => c.legacyId).map(c => ({

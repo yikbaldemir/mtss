@@ -8,6 +8,7 @@
   },
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index?route=:path*" },
+    { "source": "/veli-formu", "destination": "/veli-formu.html" },
     { "source": "/preview.html", "destination": "/index.html" }
   ],
   "headers": [

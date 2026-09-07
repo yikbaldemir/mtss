@@ -40,6 +40,16 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     assert.equal('meetings' in d,false);assert.deepEqual(d.records,[]);assert.equal(d.rubricCriteria.length,21);assert.equal(d.rubricScale.length,5);
     const sid=d.students[0].id;
     const firstGradeSid=d.students.find(student=>student.classId==='nazmi-1a').id;
+    const parentSetup=await request('/api/parent-form');assert.equal(parentSetup.status,200);assert.equal(parentSetup.data.schools.length,2);assert.equal(parentSetup.data.questions.length,4);
+    const parentPayload={schoolId:'nazmi',className:d.classes.find(item=>item.id===d.students[0].classId).name.replace('-',''),studentName:d.students[0].name.toLocaleUpperCase('tr'),respondentName:'Deneme Veli',relationship:'Anne',answers:{strengths:'İletişimi güçlü.',supportNeeds:'Planlama desteği gerekiyor.',homeRoutine:'Akşam kısa çalışmalar yapıyor.',schoolNotes:'VELI_GIZLI deneme yanıtı.'}};
+    assert.equal((await request('/api/parent-form','POST',{...parentPayload,studentName:'Eşleşmeyen Öğrenci'})).status,404);
+    assert.equal((await request('/api/parent-form','POST',{...parentPayload,answers:{...parentPayload.answers,strengths:''}})).status,400);
+    assert.equal((await request('/api/parent-form','POST',parentPayload)).status,201);
+    assert.equal((await request('/api/parent-forms?studentId='+sid)).status,401);
+    assert.equal((await request('/api/parent-forms?studentId='+sid,'GET',null,guest)).status,403);
+    const parentForms=(await request('/api/parent-forms?studentId='+sid,'GET',null,editor)).data;assert.equal(parentForms.length,1);assert.equal(parentForms[0].respondentName,'Deneme Veli');assert.ok(parentForms[0].answers.some(answer=>answer.value.includes('VELI_GIZLI')));
+    assert.equal((await request('/api/parent-forms?studentId='+sid,'GET',null,tugba)).status,200);
+    assert.equal((await request('/api/parent-forms?studentId='+sid,'GET',null,kubra)).status,403);
     assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,guest)).status,403);
     const profile={birthDate:'2023-04-03',gender:'Kız',parentName:'Örnek Veli',phone:'555 000 00 00'};
     assert.equal((await request('/api/students/'+sid,'PUT',profile,guest)).status,403);
@@ -88,13 +98,13 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     const rubricExport=await request('/api/export?schoolId=nazmi&kind=rubric','GET',null,editor);assert.equal(rubricExport.status,200);assert.ok(rubricExport.data.includes(Buffer.from(d.rubricCriteria[0].behavior)));assert.ok(rubricExport.data.includes(Buffer.from('3 — Bağımsız Sergiliyor')));assert.ok(!rubricExport.data.includes(Buffer.from('=Örnek')));const rubricXml=rubricExport.data.toString('utf8');assert.equal((rubricXml.match(/<row r="/g)||[]).length,2);assert.ok(rubricXml.includes('r="AA1"'));assert.ok(rubricXml.includes('autoFilter ref="A1:AA2"'));
     assert.equal((await request('/api/export?schoolId=nazmi&kind=unknown','GET',null,editor)).status,400);
     assert.equal((await request('/data/rehberlik.sqlite')).status,404);assert.equal((await request('/server.cjs')).status,404);
-    const publicData=JSON.stringify((await request('/api/data?schoolId=nazmi','GET',null,guest)).data);assert.ok(!publicData.includes('GİZLİ'));assert.ok(!publicData.includes('=Örnek'));
+    const publicData=JSON.stringify((await request('/api/data?schoolId=nazmi','GET',null,guest)).data);assert.ok(!publicData.includes('GİZLİ'));assert.ok(!publicData.includes('=Örnek'));assert.ok(!publicData.includes('VELI_GIZLI'));
     await request('/api/logout','POST',{},editor);assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,editor)).status,401);
     await stop();await start();
     assert.equal((await request('/api/session','GET',null,guest)).data.role,'guest');
     assert.equal((await request('/api/session','GET',null,editor)).data.role,null);
     const tugbaSession=(await request('/api/session','GET',null,tugba)).data;assert.equal(tugbaSession.role,'editor');assert.equal(tugbaSession.user.name,'Tuğba Saygı');
     const again=(await request('/api/login','POST',{username:'ilaydahisarbeyli',password:'123456'})).cookie;
-    const saved=(await request('/api/data?schoolId=nazmi','GET',null,again)).data;assert.equal(saved.records.length,2);assert.equal(saved.records.filter(r=>r.kind==='rubric').length,1);assert.equal(saved.students[0].parentName,'Örnek Veli');assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,again)).data.length,2);
+    const saved=(await request('/api/data?schoolId=nazmi','GET',null,again)).data;assert.equal(saved.records.length,2);assert.equal(saved.records.filter(r=>r.kind==='rubric').length,1);assert.equal(saved.students[0].parentName,'Örnek Veli');assert.equal((await request('/api/meetings?studentId='+sid,'GET',null,again)).data.length,2);assert.equal((await request('/api/parent-forms?studentId='+sid,'GET',null,again)).data.length,1);
   }finally{if(child)await stop();fs.rmSync(dir,{recursive:true,force:true});}
 });
