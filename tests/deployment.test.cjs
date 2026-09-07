@@ -7,6 +7,12 @@ const { execFileSync } = require('node:child_process');
 const { Readable } = require('node:stream');
 const root = path.join(__dirname, '..');
 
+test('PDF fonts are embedded for serverless deployments', () => {
+  const source = fs.readFileSync(path.join(root, 'server', 'pdf.cjs'), 'utf8');
+  assert.match(source, /pdfmake\/build\/vfs_fonts\.js/);
+  assert.doesNotMatch(source, /require\.resolve\([^)]*\.ttf/);
+});
+
 test('Vercel function imports without a DOM, database configuration, or listener', () => {
   const output = execFileSync(process.execPath, ['--input-type=module', '-e', "const {default:handler}=await import('./api/index.mjs'); if(typeof handler!=='function')throw Error('Missing export'); console.log('import-ok');"], {
     cwd: root, timeout: 5000, env: { ...process.env, VERCEL: '1', TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '' }

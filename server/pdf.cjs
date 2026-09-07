@@ -1,7 +1,9 @@
 const PDFDocument = require('pdfkit');
+const embeddedFonts = require('pdfmake/build/vfs_fonts.js');
 
-const regularFont = require.resolve('pdfmake/fonts/Roboto/Roboto-Regular.ttf');
-const boldFont = require.resolve('pdfmake/fonts/Roboto/Roboto-Medium.ttf');
+const fontFiles = embeddedFonts.pdfMake?.vfs || embeddedFonts;
+const regularFont = Buffer.from(fontFiles['Roboto-Regular.ttf'], 'base64');
+const boldFont = Buffer.from(fontFiles['Roboto-Medium.ttf'], 'base64');
 
 function turkishDate(value) {
   const parsed = new Date(`${value}T00:00:00`);
