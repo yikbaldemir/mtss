@@ -37,15 +37,25 @@ test('The separate parent portal publishes no MTSS application assets', () => {
   assert.ok(!fs.readFileSync(path.join(portal, 'public/app.js'), 'utf8').includes('/api/login'));
 });
 
-test('Existing Nazmi five-year-old students migrate to class A', async () => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'mtss-five-year-migration-'));
+test('Old Nazmi demo students and their records are replaced by the real roster', async () => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'mtss-real-roster-migration-'));
   const { createDatabase, initialize } = require('../server/database.cjs');
   const db = createDatabase({ DATA_DIR: folder });
   try {
     await initialize(db, { DATA_DIR: folder });
-    await db.run('UPDATE students SET classId=? WHERE id=?', 'nazmi-anaokulu5yas', 'ana5-0');
+    await db.run('INSERT OR REPLACE INTO students VALUES(?,?,?,?,?,?,?)', 'ana5-0', 'nazmi-anaokulu5yas', 'DENEME ÖĞRENCİ', '2021-01-01', 'Belirtilmedi', '', '');
+    await db.run('INSERT INTO records VALUES(?,?,?,?,?,?,?,?,?)', 'demo-record', 'ana5-0', 'observation', 'İlayda Hisarbeyli', '', '2026-09-01', 'Genel Gözlem', 'deneme', new Date().toISOString());
+    await db.run('INSERT INTO parent_forms VALUES(?,?,?,?,?,?)', 'demo-parent', 'ana5-0', 'Deneme Veli', 'Anne', '{}', new Date().toISOString());
+    await db.run('INSERT INTO interviews VALUES(?,?,?,?,?,?,?,?,?,?,?)', 'demo-interview', 'student', 'individual', 'completed', '2026-09-01', '', '', 'Deneme', 'Deneme', 'ilaydahisarbeyli', new Date().toISOString());
+    await db.run('INSERT INTO interview_students VALUES(?,?,?)', 'demo-interview', 'ana5-0', 1);
     await initialize(db, { DATA_DIR: folder });
-    assert.equal((await db.get('SELECT classId FROM students WHERE id=?', 'ana5-0')).classId, 'nazmi-anaokulu5yasa');
+    assert.equal(await db.get('SELECT id FROM students WHERE id=?', 'ana5-0'), undefined);
+    assert.equal(await db.get('SELECT id FROM records WHERE id=?', 'demo-record'), undefined);
+    assert.equal(await db.get('SELECT id FROM parent_forms WHERE id=?', 'demo-parent'), undefined);
+    assert.equal(await db.get('SELECT id FROM interviews WHERE id=?', 'demo-interview'), undefined);
+    assert.equal((await db.get('SELECT COUNT(*) AS count FROM students')).count, 288);
+    assert.equal((await db.get('SELECT COUNT(*) AS count FROM students WHERE classId=?', 'nazmi-anaokulu5yasa')).count, 10);
+    assert.equal((await db.get('SELECT COUNT(*) AS count FROM students WHERE classId LIKE ? AND birthDate<>?', 'nazmi-%', '')).count, 0);
   } finally {
     db.close();
     fs.rmSync(folder, { recursive: true, force: true });

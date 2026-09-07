@@ -1,3 +1,6 @@
+const crypto = require('node:crypto');
+const { nazmiRoster } = require('./nazmi-roster.cjs');
+
 const schools = [
   { id: 'nazmi', name: 'Kağıthane Nazmi Arıkan Fen Bilimleri İlkokulu' },
   { id: 'atagen', name: 'Kağıthane Atagen İlkokulu' }
@@ -34,17 +37,23 @@ const surnames = ['Yılmaz', 'Demir', 'Kaya', 'Aydın', 'Şahin', 'Arslan', 'Çe
 const legacyNazmiIds = { 'Anaokulu 3 Yaş': 'ana3', 'Anaokulu 4 Yaş': 'ana4', 'Anaokulu 5 Yaş A': 'ana5', '1-A': '1a', '1-B': '1b' };
 const slug = name => name.toLocaleLowerCase('tr').replaceAll('ı', 'i').replaceAll('ş', 's').replaceAll('ğ', 'g').replaceAll('ü', 'u').replaceAll('ö', 'o').replaceAll('ç', 'c').replace(/[^a-z0-9]+/g, '');
 
-const classes = definitions.map((item, classIndex) => ({
-  id: `${item.schoolId}-${slug(item.name)}`,
-  schoolId: item.schoolId,
-  name: item.name,
-  teacher: item.teacher || '',
-  legacyId: item.schoolId === 'nazmi' ? legacyNazmiIds[item.name] : undefined,
-  students: Array.from({ length: 10 }, (_, studentIndex) => {
+const classes = definitions.map((item, classIndex) => {
+  const id = `${item.schoolId}-${slug(item.name)}`;
+  const legacyId = item.schoolId === 'nazmi' ? legacyNazmiIds[item.name] : undefined;
+  const students = item.schoolId === 'nazmi' ? nazmiRoster[item.name] : Array.from({ length: 10 }, (_, studentIndex) => {
     const index = classIndex * 10 + studentIndex;
     return `${firstNames[index % firstNames.length]} ${surnames[Math.floor(index / firstNames.length) % surnames.length]}`;
-  })
-}));
+  });
+  return {
+    id,
+    schoolId: item.schoolId,
+    name: item.name,
+    teacher: item.teacher || '',
+    legacyId,
+    students,
+    studentIds: students.map((name, index) => item.schoolId === 'nazmi' ? `nazmi-${crypto.createHash('sha256').update(`${id}\0${name}`).digest('hex').slice(0, 16)}` : `${legacyId || id}-${index}`)
+  };
+});
 
 const editorTeachers = [
   'İlayda Hisarbeyli',
