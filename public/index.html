@@ -184,6 +184,13 @@
     .teacher-check-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff}
     .teacher-check-list label{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:9px;background:#f8fafc;font-size:13px;cursor:pointer}
     .teacher-check-list input{accent-color:var(--primary)}
+    .teacher-toggle{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+    .teacher-toggle>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;cursor:pointer;list-style:none;font-size:13px;font-weight:700}
+    .teacher-toggle>summary::-webkit-details-marker{display:none}
+    .teacher-toggle>summary i::after{content:'▾';font-style:normal;color:var(--primary)}
+    .teacher-toggle[open]>summary{border-bottom:1px solid var(--line);background:#f8fafc}
+    .teacher-toggle[open]>summary i::after{content:'▴'}
+    .teacher-toggle .teacher-check-list{border:0;border-radius:0}
     .group-picker-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end}
     .group-picker-grid .form-group{min-width:0}
     .group-picker-grid>.btn{margin-bottom:0;white-space:nowrap}
