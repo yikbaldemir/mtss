@@ -9,7 +9,7 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
   let child,base;
   async function start(){child=spawn(process.execPath,[entry],{cwd:__dirname,env:{...process.env,DATA_DIR:dir,PORT:'0',VERCEL:'',TURSO_DATABASE_URL:'',TURSO_AUTH_TOKEN:'',EDITOR_PASSWORD:'123456',TUGBA_EDITOR_PASSWORD:'tugba-test',KUBRA_EDITOR_PASSWORD:'kubra-test',SELIN_EDITOR_PASSWORD:'selin-test'},stdio:['ignore','pipe','pipe']});base=await new Promise((resolve,reject)=>{let out='';child.stdout.on('data',b=>{out+=b;const m=out.match(/http:\/\/localhost:(\d+)/);if(m)resolve(`http://127.0.0.1:${m[1]}`);});child.on('error',reject);child.on('exit',code=>reject(new Error('Server exited: '+code)));});}
   async function stop(){if(child.exitCode===null)await new Promise(resolve=>{child.once('exit',resolve);child.kill();});}
-  async function request(route,method='GET',body,cookie){const r=await fetch(base+route,{method,headers:{...(body?{'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:body?JSON.stringify(body):undefined});const bytes=Buffer.from(await r.arrayBuffer());return {status:r.status,cookie:r.headers.get('set-cookie')?.split(';')[0],data:r.headers.get('content-type')?.includes('json')?JSON.parse(bytes):bytes};}
+  async function request(route,method='GET',body,cookie,extraHeaders={}){const r=await fetch(base+route,{method,headers:{...(body?{'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{}),...extraHeaders},body:body?JSON.stringify(body):undefined});const bytes=Buffer.from(await r.arrayBuffer());return {status:r.status,headers:r.headers,cookie:r.headers.get('set-cookie')?.split(';')[0],data:r.headers.get('content-type')?.includes('json')?JSON.parse(bytes):bytes};}
   try{
     await start();
     assert.equal((await request('/api/data')).status,401);
@@ -40,10 +40,14 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     assert.equal('meetings' in d,false);assert.deepEqual(d.records,[]);assert.equal(d.rubricCriteria.length,21);assert.equal(d.rubricScale.length,5);
     const sid=d.students[0].id;
     const firstGradeSid=d.students.find(student=>student.classId==='nazmi-1a').id;
-    const parentSetup=await request('/api/parent-form');assert.equal(parentSetup.status,200);assert.equal(parentSetup.data.schools.length,2);assert.equal(parentSetup.data.questions.length,4);
+    const portalOrigin='https://veli-bilgi-formlari-kagithane.vercel.app';
+    const parentSetup=await request('/api/parent-form','GET',null,null,{Origin:portalOrigin});assert.equal(parentSetup.status,200);assert.equal(parentSetup.headers.get('access-control-allow-origin'),portalOrigin);assert.equal(parentSetup.data.schools.length,2);assert.equal(parentSetup.data.questions.length,4);
+    const preflight=await request('/api/parent-form','OPTIONS',null,null,{Origin:portalOrigin,'Access-Control-Request-Method':'POST'});assert.equal(preflight.status,204);assert.equal(preflight.headers.get('access-control-allow-origin'),portalOrigin);
     const parentPayload={schoolId:'nazmi',className:d.classes.find(item=>item.id===d.students[0].classId).name.replace('-',''),studentName:d.students[0].name.toLocaleUpperCase('tr'),respondentName:'Deneme Veli',relationship:'Anne',answers:{strengths:'İletişimi güçlü.',supportNeeds:'Planlama desteği gerekiyor.',homeRoutine:'Akşam kısa çalışmalar yapıyor.',schoolNotes:'VELI_GIZLI deneme yanıtı.'}};
     assert.equal((await request('/api/parent-form','POST',{...parentPayload,studentName:'Eşleşmeyen Öğrenci'})).status,404);
     assert.equal((await request('/api/parent-form','POST',{...parentPayload,answers:{...parentPayload.answers,strengths:''}})).status,400);
+    assert.equal((await request('/api/parent-form','POST',{...parentPayload,website:'bot'},null,{Origin:portalOrigin,'Sec-Fetch-Site':'cross-site'})).status,201);
+    assert.equal((await request('/api/parent-form','POST',parentPayload,null,{Origin:'https://example.com','Sec-Fetch-Site':'cross-site'})).status,403);
     assert.equal((await request('/api/parent-form','POST',parentPayload)).status,201);
     assert.equal((await request('/api/parent-forms?studentId='+sid)).status,401);
     assert.equal((await request('/api/parent-forms?studentId='+sid,'GET',null,guest)).status,403);

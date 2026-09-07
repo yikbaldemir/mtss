@@ -1,0 +1,11 @@
+{
+  "name": "veli-bilgi-formlari-kagithane",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node --check public/app.js"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

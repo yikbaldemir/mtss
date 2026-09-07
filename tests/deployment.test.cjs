@@ -24,6 +24,18 @@ test('Only public assets are published and API rewrites preserve the requested p
   assert.ok(fs.readFileSync(path.join(root, 'public/veli-formu.html'), 'utf8').includes('src="veli-formu.js"'));
 });
 
+test('The separate parent portal publishes no MTSS application assets', () => {
+  const portal = path.join(root, 'parent-portal');
+  const config = JSON.parse(fs.readFileSync(path.join(portal, 'vercel.json')));
+  assert.equal(config.outputDirectory, 'public');
+  assert.deepEqual(fs.readdirSync(path.join(portal, 'public')).sort(), ['app.js', 'index.html']);
+  assert.equal(config.rewrites.find(r => r.source === '/').destination, '/index.html');
+  const html = fs.readFileSync(path.join(portal, 'public/index.html'), 'utf8');
+  assert.ok(html.includes('Veli Bilgi Formu'));
+  assert.ok(!html.includes('MTSS'));
+  assert.ok(!fs.readFileSync(path.join(portal, 'public/app.js'), 'utf8').includes('/api/login'));
+});
+
 test('Vercel never silently falls back to temporary SQLite storage', () => {
   const { createDatabase } = require('../server/database.cjs');
   assert.throws(() => createDatabase({ VERCEL: '1' }), e => e.status === 503 && /TURSO_DATABASE_URL/.test(e.message));

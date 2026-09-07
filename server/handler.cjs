@@ -6,6 +6,7 @@ const { getDatabase } = require('./database.cjs');
 const { editorProfile, canAccessClass, publicEditorProfile } = require('./editor-accounts.cjs');
 const interviewSubjects = ['Genel Görüşme', 'Akademik', 'Sosyal-Duygusal', 'Davranış', 'Akran İlişkileri', 'Uyum Süreci', 'Devamsızlık / Okula Katılım', 'Diğer'];
 const parentRelationships = ['Anne', 'Baba', 'Vasi / Diğer'];
+const parentPortalOrigin = process.env.PARENT_PORTAL_ORIGIN || 'https://veli-bilgi-formlari-kagithane.vercel.app';
 const parentFormQuestions = [
   { id: 'strengths', label: 'Çocuğunuzun güçlü yönleri nelerdir?', required: true, max: 2000 },
   { id: 'supportNeeds', label: 'En çok hangi alanlarda desteğe ihtiyaç duyuyor?', required: true, max: 2000 },
@@ -175,9 +176,21 @@ async function handler(req, res) {
     const route = url.pathname === '/api/index' && url.searchParams.has('route')
       ? '/api/' + url.searchParams.get('route') : url.pathname;
     if (!route.startsWith('/api/')) fail(404, 'İşlem bulunamadı.');
+    const parentFormRoute = route === '/api/parent-form';
+    const parentPortalRequest = parentFormRoute && req.headers.origin === parentPortalOrigin;
+    if (parentPortalRequest) {
+      res.setHeader('Access-Control-Allow-Origin', parentPortalOrigin);
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Vary', 'Origin');
+    }
+    if (parentFormRoute && req.method === 'OPTIONS') {
+      if (!parentPortalRequest) fail(403, 'Geçersiz kaynak.');
+      res.writeHead(204); return res.end();
+    }
     if (['POST', 'DELETE', 'PUT'].includes(req.method)) {
-      if (req.headers.origin && req.headers.origin !== `http://${req.headers.host}` && req.headers.origin !== `https://${req.headers.host}`) fail(403, 'Geçersiz kaynak.');
-      if (req.headers['sec-fetch-site'] === 'cross-site') fail(403, 'Geçersiz kaynak.');
+      if (req.headers.origin && req.headers.origin !== `http://${req.headers.host}` && req.headers.origin !== `https://${req.headers.host}` && !parentPortalRequest) fail(403, 'Geçersiz kaynak.');
+      if (req.headers['sec-fetch-site'] === 'cross-site' && !parentPortalRequest) fail(403, 'Geçersiz kaynak.');
       if (!req.headers['content-type']?.startsWith('application/json')) fail(415, 'JSON gereklidir.');
     }
     // Lazy initialization: importing the function never opens SQLite or accesses the DOM.
