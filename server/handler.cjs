@@ -301,6 +301,25 @@ async function handler(req, res) {
       const rows = await db.all('SELECT * FROM parent_forms WHERE studentId=? ORDER BY createdAt DESC', target.id);
       return json(res, 200, rows.map(row => ({ id: row.id, respondentName: row.respondentName, relationship: row.relationship, createdAt: row.createdAt, answers: parseParentFormAnswers(row.answers) })));
     }
+    if (route === '/api/weekly-meetings') {
+      editor(s);
+      if (!['GET', 'POST'].includes(req.method)) fail(404, 'İşlem bulunamadı.');
+      const b = req.method === 'POST' ? await body(req) : null;
+      const school = selectedSchool(req.method === 'GET' ? url.searchParams.get('schoolId') : b.schoolId);
+      if (!visibleClasses(s, school.id).length) fail(403, 'Bu okulun toplantılarına erişim yetkiniz yok.');
+      if (req.method === 'GET') {
+        const rows = await db.all('SELECT * FROM weekly_meetings WHERE schoolId=? ORDER BY date DESC,createdAt DESC', school.id);
+        return json(res, 200, rows.map(row => { let teacherNames = []; try { teacherNames = JSON.parse(row.teacherNames); } catch {} return { ...row, teacherNames, createdByName: publicEditorProfile(row.createdBy)?.name || row.createdBy }; }));
+      }
+      if (req.method === 'POST') {
+        if (!Array.isArray(b.teacherNames)) fail(400, 'Toplantıya katılan öğretmenleri seçin.');
+        const teacherNames = [...new Set(b.teacherNames.filter(name => typeof name === 'string' && teachers.includes(name)))];
+        if (!teacherNames.length || teacherNames.length !== b.teacherNames.length) fail(400, 'Toplantıya katılan öğretmenleri kontrol edin.');
+        const id = crypto.randomUUID();
+        await db.run('INSERT INTO weekly_meetings VALUES(?,?,?,?,?,?,?)', id, school.id, date(b.date), JSON.stringify(teacherNames), required(b.topics, 'Görüşülen konular', 10000), s.username, new Date().toISOString());
+        return json(res, 201, { id });
+      }
+    }
     if (route === '/api/interviews') {
       editor(s);
       if (req.method === 'GET') {
