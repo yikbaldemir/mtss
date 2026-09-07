@@ -152,6 +152,8 @@
     .response-toggle[open] .response-summary-meta i::after{content:'▴'}
     .response-toggle[open]>summary{border-bottom:1px solid var(--line);background:#f8fafc}
     .response-toggle-content{padding:16px}
+    .record-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+    .record-actions .compact{padding:8px 12px;font-size:13px}
     .response-fields{display:grid;gap:12px}
     .response-fields p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
     .response-fields p strong{display:block;margin-bottom:3px;color:#374151;font-size:13px}
@@ -287,4 +289,5 @@
 <div id="schoolView" class="login-wrap" hidden><section class="card school-card"><div class="brand-badge">M</div><h1>Okul seçin</h1><p class="muted">Devam etmek istediğiniz okulu seçin.</p><div id="schoolOptions" class="school-options"></div><p id="schoolError" class="login-error" role="alert"></p><div class="school-actions"><button class="btn secondary" onclick="logout()">Çıkış yap</button></div></section></div>
 <div id="workspace" class="app" hidden><aside class="sidebar"><div class="brand"><div class="brand-badge">M</div><div><h1>MTSS</h1><span>Öğrenci Takip Sistemi</span></div></div><nav class="nav"><button id="navClasses" class="active" onclick="showClasses()">Sınıflar</button><button id="navEvaluations" onclick="showEvaluations()" hidden>Tüm Değerlendirmeler</button><button id="navInterviews" onclick="showInterviewTracking()" hidden>Görüşme Takip</button><button id="navCalendar" onclick="showCalendar()" hidden>Takvim</button><button id="navWeeklyMeetings" onclick="showWeeklyMeetings()" hidden>Haftalık Toplantılar</button></nav><div class="role-box"><strong id="schoolLabel"></strong><span id="roleLabel"></span><button class="btn secondary" onclick="showSchoolSelection()">Okul değiştir</button><button class="btn secondary" onclick="logout()">Çıkış yap</button></div><div id="schoolSummary" class="sidebar-note"></div></aside><main class="main"><div id="pageError" role="alert"></div><div id="appContent"></div></main></div>
 <dialog id="deleteDialog" class="delete-dialog"><h3>Görüşme silinsin mi?</h3><p>Bu görüşme kaydı kalıcı olarak kaldırılacak.</p><div class="toolbar"><button class="btn secondary" onclick="document.getElementById('deleteDialog').close()">Vazgeç</button><button id="confirmDelete" class="btn danger">Görüşmeyi sil</button></div></dialog>
+<dialog id="recordDeleteDialog" class="delete-dialog"><h3>Form yanıtı silinsin mi?</h3><p>Bu form yanıtı kalıcı olarak kaldırılacak ve geri alınamayacak.</p><div class="toolbar"><button class="btn secondary" onclick="document.getElementById('recordDeleteDialog').close()">Vazgeç</button><button id="confirmRecordDelete" class="btn danger">Formu sil</button></div></dialog>
 <div class="toast" id="toast" role="status"></div><script src="/app.js"></script></body></html>

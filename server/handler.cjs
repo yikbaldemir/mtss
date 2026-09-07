@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const { schools, classes, teachers } = require('../seed.cjs');
 const { rubricScale, rubricCriteria, rubricSections } = require('./observation-form.cjs');
 const { workbook } = require('../xlsx.cjs');
+const { recordPdf } = require('./pdf.cjs');
 const { getDatabase } = require('./database.cjs');
 const { editorProfile, canAccessClass, publicEditorProfile } = require('./editor-accounts.cjs');
 const interviewSubjects = ['Genel Görüşme', 'Akademik', 'Sosyal-Duygusal', 'Davranış', 'Akran İlişkileri', 'Uyum Süreci', 'Devamsızlık / Okula Katılım', 'Diğer'];
@@ -295,11 +296,45 @@ async function handler(req, res) {
       await db.run('INSERT INTO records VALUES(?,?,?,?,?,?,?,?,?)', id, b.studentId, b.kind, b.teacher, day, date(b.date), type, note, new Date().toISOString());
       return json(res, 201, { id });
     }
+    const recordMatch = route.match(/^\/api\/records\/([^/]+)(\/pdf)?$/);
+    if (recordMatch && (req.method === 'DELETE' || (req.method === 'GET' && recordMatch[2]))) {
+      editor(s);
+      const record = await db.get('SELECT r.*,st.name AS student,st.classId FROM records r JOIN students st ON st.id=r.studentId WHERE r.id=?', recordMatch[1]);
+      if (!record) fail(404, 'Form yanıtı bulunamadı.');
+      authorizeClass(s, record.classId);
+      if (req.method === 'DELETE') {
+        if (recordMatch[2]) fail(404, 'İşlem bulunamadı.');
+        await db.run('DELETE FROM records WHERE id=?', record.id);
+        return json(res, 200, { ok: true });
+      }
+      const classItem = classes.find(item => item.id === record.classId);
+      const school = schools.find(item => item.id === classItem.schoolId);
+      const pdf = await recordPdf({ record, school: school.name, className: classItem.name, rubricCriteria, rubricScale });
+      res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${pdf.filename}"`, 'Content-Length': pdf.bytes.length });
+      return res.end(pdf.bytes);
+    }
     if (route === '/api/parent-forms' && req.method === 'GET') {
       editor(s);
       const target = await student(db, url.searchParams.get('studentId'), s);
       const rows = await db.all('SELECT * FROM parent_forms WHERE studentId=? ORDER BY createdAt DESC', target.id);
       return json(res, 200, rows.map(row => ({ id: row.id, respondentName: row.respondentName, relationship: row.relationship, createdAt: row.createdAt, answers: parseParentFormAnswers(row.answers) })));
+    }
+    const parentFormMatch = route.match(/^\/api\/parent-forms\/([^/]+)(\/pdf)?$/);
+    if (parentFormMatch && (req.method === 'DELETE' || (req.method === 'GET' && parentFormMatch[2]))) {
+      editor(s);
+      const form = await db.get('SELECT p.*,st.name AS student,st.classId FROM parent_forms p JOIN students st ON st.id=p.studentId WHERE p.id=?', parentFormMatch[1]);
+      if (!form) fail(404, 'Veli bilgi formu bulunamadı.');
+      authorizeClass(s, form.classId);
+      if (req.method === 'DELETE') {
+        if (parentFormMatch[2]) fail(404, 'İşlem bulunamadı.');
+        await db.run('DELETE FROM parent_forms WHERE id=?', form.id);
+        return json(res, 200, { ok: true });
+      }
+      const classItem = classes.find(item => item.id === form.classId);
+      const school = schools.find(item => item.id === classItem.schoolId);
+      const pdf = await recordPdf({ record: { ...form, kind: 'parent', date: form.createdAt.slice(0, 10), answers: parseParentFormAnswers(form.answers) }, school: school.name, className: classItem.name, rubricCriteria, rubricScale });
+      res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${pdf.filename}"`, 'Content-Length': pdf.bytes.length });
+      return res.end(pdf.bytes);
     }
     if (route === '/api/weekly-meetings') {
       editor(s);
