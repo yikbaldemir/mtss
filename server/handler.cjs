@@ -316,7 +316,7 @@ async function handler(req, res) {
         const teacherNames = [...new Set(b.teacherNames.filter(name => typeof name === 'string' && teachers.includes(name)))];
         if (!teacherNames.length || teacherNames.length !== b.teacherNames.length) fail(400, 'Toplantıya katılan öğretmenleri kontrol edin.');
         const id = crypto.randomUUID();
-        await db.run('INSERT INTO weekly_meetings VALUES(?,?,?,?,?,?,?)', id, school.id, date(b.date), JSON.stringify(teacherNames), required(b.topics, 'Görüşülen konular', 10000), s.username, new Date().toISOString());
+        await db.run('INSERT INTO weekly_meetings VALUES(?,?,?,?,?,?,?)', id, school.id, date(b.date), JSON.stringify(teacherNames), required(b.topics, 'Görüşülen konular', 60000), s.username, new Date().toISOString());
         return json(res, 201, { id });
       }
     }

@@ -54,7 +54,7 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     const parentForms=(await request('/api/parent-forms?studentId='+sid,'GET',null,editor)).data;assert.equal(parentForms.length,1);assert.equal(parentForms[0].respondentName,'Deneme Veli');assert.ok(parentForms[0].answers.some(answer=>answer.value.includes('VELI_GIZLI')));
     assert.equal((await request('/api/parent-forms?studentId='+sid,'GET',null,tugba)).status,200);
     assert.equal((await request('/api/parent-forms?studentId='+sid,'GET',null,kubra)).status,403);
-    const weeklyMeeting={schoolId:'nazmi',date:'2026-09-05',teacherNames:[d.teachers[0],d.teachers[1]],topics:'Öğrencilerin uyum süreci ve haftalık çalışmalar görüşüldü.'};
+    const weeklyMeeting={schoolId:'nazmi',date:'2026-09-05',teacherNames:[d.teachers[0],d.teachers[1]],topics:'K'.repeat(12000)};
     assert.equal((await request('/api/weekly-meetings?schoolId=nazmi')).status,401);
     assert.equal((await request('/api/weekly-meetings','POST',weeklyMeeting,guest)).status,403);
     assert.equal((await request('/api/weekly-meetings','POST',{...weeklyMeeting,teacherNames:['Tanımsız Öğretmen']},editor)).status,400);
