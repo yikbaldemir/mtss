@@ -3,9 +3,25 @@ const schools = [
   { id: 'atagen', name: 'Kağıthane Atagen İlkokulu' }
 ];
 
+const nazmiClassTeachers = {
+  'Anaokulu 3 Yaş': 'Sıla Konukçu',
+  'Anaokulu 4 Yaş': 'Elif Gaye Dingil',
+  'Anaokulu 5 Yaş A': 'Esra Derebaşı',
+  'Anaokulu 5 Yaş B': 'Sema Kesik',
+  '1-A': 'Berkay Meç',
+  '1-B': 'Mehmet Baytekin',
+  '2-A': 'Hüsniye Berk',
+  '2-B': 'Beste Gülçiçek',
+  '3-A': 'Doğuş Aydın',
+  '3-B': 'Dilek Güngör',
+  '3-C': 'İlker Bayraktar',
+  '4-A': 'Çiğdem Uzunçakmak',
+  '4-B': 'Fadime Karataş'
+};
+
 const definitions = [
   ...['Anaokulu 3 Yaş', 'Anaokulu 4 Yaş', 'Anaokulu 5 Yaş A', 'Anaokulu 5 Yaş B', '1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '3-C', '4-A', '4-B']
-    .map(name => ({ schoolId: 'nazmi', name })),
+    .map(name => ({ schoolId: 'nazmi', name, teacher: nazmiClassTeachers[name] })),
   ...['Anaokulu 3 Yaş', 'Anaokulu 4 Yaş', 'Anaokulu 5 Yaş', '1-A', '2-A', '3-A', '4-A', '4-B']
     .map(name => ({ schoolId: 'atagen', name }))
 ];
@@ -22,6 +38,7 @@ const classes = definitions.map((item, classIndex) => ({
   id: `${item.schoolId}-${slug(item.name)}`,
   schoolId: item.schoolId,
   name: item.name,
+  teacher: item.teacher || '',
   legacyId: item.schoolId === 'nazmi' ? legacyNazmiIds[item.name] : undefined,
   students: Array.from({ length: 10 }, (_, studentIndex) => {
     const index = classIndex * 10 + studentIndex;
@@ -29,15 +46,55 @@ const classes = definitions.map((item, classIndex) => ({
   })
 }));
 
-const teachers = [
+const editorTeachers = [
   'İlayda Hisarbeyli',
   'Tuğba Saygı',
   'Kübra Kaban',
-  'Selin Ak',
+  'Selin Ak'
+];
+const atagenTeachers = [
+  ...editorTeachers,
   'Ayşe Kaya',
   'Burcu Demir',
   'Emre Yıldız',
   'Merve Çelik',
   'Selin Arslan'
 ];
-module.exports = { schools, classes, teachers };
+const nazmiTeachers = [
+  ...editorTeachers,
+  'Esra Derebaşı',
+  'Sema Kesik',
+  'Elif Gaye Dingil',
+  'Sıla Konukçu',
+  'Berkay Meç',
+  'Mehmet Baytekin',
+  'Hüsniye Berk',
+  'Beste Gülçiçek',
+  'Doğuş Aydın',
+  'Dilek Güngör',
+  'İlker Bayraktar',
+  'Çiğdem Uzunçakmak',
+  'Fadime Karataş',
+  'Selen Doğan',
+  'Sevda Sakarya',
+  'Necip Can Bek',
+  'Esra Coşkun',
+  'Çisem Çil',
+  'Esma Bozkurt',
+  'Irmak Sel',
+  'Gamze Karahan',
+  'Zeynep Kuleci',
+  'Taylan Öztürk',
+  'Aleyna Süberk',
+  'Seren Konyalı Şimşek',
+  'Muhteşem Merve Eraslan',
+  'Seda Şallıel',
+  'Filiz Gülen',
+  'Din Kültürü Öğretmeni',
+  'Özgür — Buz Pateni',
+  'Beyza — Yüzme'
+];
+const teachersBySchool = { nazmi: nazmiTeachers, atagen: atagenTeachers };
+const teachersForSchool = schoolId => teachersBySchool[schoolId] || [];
+const teachers = [...new Set(Object.values(teachersBySchool).flat())];
+module.exports = { schools, classes, teachers, teachersBySchool, teachersForSchool };

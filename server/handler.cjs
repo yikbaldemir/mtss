@@ -1,5 +1,5 @@
 const crypto = require('node:crypto');
-const { schools, classes, teachers } = require('../seed.cjs');
+const { schools, classes, teachersForSchool } = require('../seed.cjs');
 const { rubricScale, rubricCriteria, rubricSections } = require('./observation-form.cjs');
 const { workbook } = require('../xlsx.cjs');
 const { recordPdf } = require('./pdf.cjs');
@@ -258,7 +258,7 @@ async function handler(req, res) {
       const school = selectedSchool(url.searchParams.get('schoolId') || schools[0].id);
       const allowedClasses = visibleClasses(s, school.id);
       if (!allowedClasses.length) fail(403, 'Bu okulda erişebileceğiniz bir sınıf yok.');
-      return json(res, 200, { school, classes: allowedClasses.map(({ id, name }) => ({ id, name })), teachers, rubricScale, rubricCriteria, rubricSections, students: await schoolStudents(db, allowedClasses), records: s.role === 'editor' ? await records(db, allowedClasses) : [] });
+      return json(res, 200, { school, classes: allowedClasses.map(({ id, name, teacher }) => ({ id, name, teacher })), teachers: teachersForSchool(school.id), rubricScale, rubricCriteria, rubricSections, students: await schoolStudents(db, allowedClasses), records: s.role === 'editor' ? await records(db, allowedClasses) : [] });
     }
     const sm = route.match(/^\/api\/students\/([^/]+)$/);
     if (sm && req.method === 'PUT') {
@@ -270,9 +270,10 @@ async function handler(req, res) {
       return json(res, 200, { ok: true });
     }
     if (route === '/api/records' && req.method === 'POST') {
-      const b = await body(req); await student(db, b.studentId, s);
+      const b = await body(req), targetStudent = await student(db, b.studentId, s);
       if (!['observation', 'rubric'].includes(b.kind)) fail(400, 'Form türü geçersiz.');
-      if (!teachers.includes(b.teacher)) fail(400, 'Öğretmen seçin.');
+      const targetClass = classes.find(item => item.id === targetStudent.classId);
+      if (!teachersForSchool(targetClass.schoolId).includes(b.teacher)) fail(400, 'Öğretmen seçin.');
       let day, type, note;
       if (b.kind === 'observation') {
         day = '';
@@ -348,7 +349,8 @@ async function handler(req, res) {
       }
       if (req.method === 'POST') {
         if (!Array.isArray(b.teacherNames)) fail(400, 'Toplantıya katılan öğretmenleri seçin.');
-        const teacherNames = [...new Set(b.teacherNames.filter(name => typeof name === 'string' && teachers.includes(name)))];
+        const schoolTeachers = teachersForSchool(school.id);
+        const teacherNames = [...new Set(b.teacherNames.filter(name => typeof name === 'string' && schoolTeachers.includes(name)))];
         if (!teacherNames.length || teacherNames.length !== b.teacherNames.length) fail(400, 'Toplantıya katılan öğretmenleri kontrol edin.');
         const id = crypto.randomUUID();
         await db.run('INSERT INTO weekly_meetings VALUES(?,?,?,?,?,?,?)', id, school.id, date(b.date), JSON.stringify(teacherNames), required(b.topics, 'Görüşülen konular', 60000), s.username, new Date().toISOString());

@@ -30,6 +30,10 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     const atagen=(await request('/api/data?schoolId=atagen','GET',null,guest)).data;
     assert.equal(d.school.id,'nazmi');assert.equal(d.classes.length,13);assert.equal(d.students.length,130);
     assert.equal(atagen.school.id,'atagen');assert.equal(atagen.classes.length,8);assert.equal(atagen.students.length,80);
+    assert.equal(d.teachers.length,35);assert.ok(d.teachers.includes('Esra Derebaşı'));assert.ok(d.teachers.includes('Beyza — Yüzme'));assert.ok(!d.teachers.includes('Ayşe Kaya'));
+    assert.equal(atagen.teachers.length,9);assert.ok(atagen.teachers.includes('Ayşe Kaya'));assert.ok(!atagen.teachers.includes('Esra Derebaşı'));
+    assert.deepEqual(Object.fromEntries(d.classes.map(item=>[item.name,item.teacher])),{'Anaokulu 3 Yaş':'Sıla Konukçu','Anaokulu 4 Yaş':'Elif Gaye Dingil','Anaokulu 5 Yaş A':'Esra Derebaşı','Anaokulu 5 Yaş B':'Sema Kesik','1-A':'Berkay Meç','1-B':'Mehmet Baytekin','2-A':'Hüsniye Berk','2-B':'Beste Gülçiçek','3-A':'Doğuş Aydın','3-B':'Dilek Güngör','3-C':'İlker Bayraktar','4-A':'Çiğdem Uzunçakmak','4-B':'Fadime Karataş'});
+    assert.ok(atagen.classes.every(item=>item.teacher===''));
     const tugbaData=(await request('/api/data?schoolId=nazmi','GET',null,tugba)).data;assert.deepEqual(tugbaData.classes.map(c=>c.name),['Anaokulu 3 Yaş','Anaokulu 4 Yaş','Anaokulu 5 Yaş A','Anaokulu 5 Yaş B']);assert.equal(tugbaData.students.length,40);
     const kubraData=(await request('/api/data?schoolId=nazmi','GET',null,kubra)).data;assert.deepEqual(kubraData.classes.map(c=>c.name),['1-A','1-B','2-A','2-B']);assert.equal(kubraData.students.length,40);
     const selinData=(await request('/api/data?schoolId=nazmi','GET',null,selin)).data;assert.deepEqual(selinData.classes.map(c=>c.name),['3-A','3-B','3-C','4-A','4-B']);assert.equal(selinData.students.length,50);
@@ -79,6 +83,8 @@ for (const entry of ['server/local.cjs', 'tests/vercel-host.mjs']) test(entry + 
     assert.equal((await request('/api/students/'+sid,'PUT',{...profile,birthDate:'2023-02-31'},editor)).status,400);
     const form={studentId:sid,teacher:d.teachers[0],date:'2026-09-03',type:'Genel Gözlem',frequency:'Yaklaşık iki haftadır, her gün',previousActions:'Sınıf içinde kısa hatırlatmalar yaptım.',note:'=Örnek & <metin>\nİkinci satır'};
     const observationCreated=await request('/api/records','POST',{...form,kind:'observation'},guest);assert.equal(observationCreated.status,201);
+    assert.equal((await request('/api/records','POST',{...form,kind:'observation',teacher:'Ayşe Kaya'},guest)).status,400);
+    assert.equal((await request('/api/records','POST',{...form,studentId:atagen.students[0].id,kind:'observation',teacher:'Esra Derebaşı'},guest)).status,400);
     assert.equal((await request('/api/records','POST',{...form,kind:'observation',frequency:''},guest)).status,400);
     assert.equal((await request('/api/records','POST',{...form,kind:'parent'},guest)).status,400);
     const ratings=Object.fromEntries(d.rubricCriteria.map(item=>[item.code,'3']));
