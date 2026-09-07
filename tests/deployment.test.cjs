@@ -21,7 +21,7 @@ test('Only public assets are published and API rewrites preserve the requested p
   assert.equal(config.rewrites.find(r => r.source === '/api/:path*').destination, '/api/index?route=:path*');
   assert.equal(config.rewrites.find(r => r.source === '/veli-formu').destination, '/veli-formu.html');
   assert.ok(fs.readFileSync(path.join(root, 'public/index.html'), 'utf8').includes('src="/app.js"'));
-  assert.ok(fs.readFileSync(path.join(root, 'public/veli-formu.html'), 'utf8').includes('src="/veli-formu.js"'));
+  assert.ok(fs.readFileSync(path.join(root, 'public/veli-formu.html'), 'utf8').includes('src="veli-formu.js"'));
 });
 
 test('Vercel never silently falls back to temporary SQLite storage', () => {

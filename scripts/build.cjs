@@ -9,6 +9,6 @@ for (const file of ['public/app.js', 'public/veli-formu.js', 'api/index.mjs', 's
 const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
 if (!html.includes('src="/app.js"')) throw new Error('Browser script is missing.');
 const parentHtml = fs.readFileSync(path.join(root, 'public/veli-formu.html'), 'utf8');
-if (!parentHtml.includes('src="/veli-formu.js"')) throw new Error('Veli formu browser script is missing.');
+if (!parentHtml.includes('src="veli-formu.js"')) throw new Error('Veli formu browser script is missing.');
 if (fs.existsSync(path.join(root, 'app.cjs'))) throw new Error('Remove the obsolete root app.cjs entrypoint; browser code belongs in public/app.js.');
 console.log('MTSS hazır: public/ statik dosyaları ve api/index.mjs sunucu fonksiyonu.');

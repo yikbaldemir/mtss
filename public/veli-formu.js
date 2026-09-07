@@ -1,6 +1,18 @@
 const $=id=>document.getElementById(id);
 const esc=value=>String(value??'').replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character]));
-let setup={schools:[],relationships:[],questions:[]};
+let setup={
+  schools:[
+    {id:'nazmi',name:'Kağıthane Nazmi Arıkan Fen Bilimleri İlkokulu'},
+    {id:'atagen',name:'Kağıthane Atagen İlkokulu'}
+  ],
+  relationships:['Anne','Baba','Vasi / Diğer'],
+  questions:[
+    {id:'strengths',label:'Çocuğunuzun güçlü yönleri nelerdir?',required:true},
+    {id:'supportNeeds',label:'En çok hangi alanlarda desteğe ihtiyaç duyuyor?',required:true},
+    {id:'homeRoutine',label:'Evdeki ders ve etkinlik çalışma düzenini kısaca anlatır mısınız?',required:true},
+    {id:'schoolNotes',label:'Okulla paylaşmak istediğiniz başka bir bilgi var mı?',required:false}
+  ]
+};
 
 async function api(method='GET',payload){
   const response=await fetch('/api/parent-form',{method,headers:payload?{'Content-Type':'application/json'}:{},body:payload?JSON.stringify(payload):undefined});
@@ -16,6 +28,8 @@ function renderSetup(){
 }
 
 async function loadSetup(){
+  renderSetup();
+  if(location.protocol==='file:'){$('formError').textContent='Bu dosya önizleme modunda açık. Formu göndermek için canlı veli bağlantısını kullanın.';$('submitButton').disabled=true;return;}
   try{setup=await api();renderSetup();}
   catch(error){$('formError').textContent='Form şu anda yüklenemiyor. Lütfen daha sonra tekrar deneyin.';$('submitButton').disabled=true;}
 }
