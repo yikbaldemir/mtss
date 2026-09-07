@@ -4,7 +4,7 @@ const schools = [
 ];
 
 const definitions = [
-  ...['Anaokulu 3 Yaş', 'Anaokulu 4 Yaş', 'Anaokulu 5 Yaş', '1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '3-C', '4-A', '4-B']
+  ...['Anaokulu 3 Yaş', 'Anaokulu 4 Yaş', 'Anaokulu 5 Yaş A', 'Anaokulu 5 Yaş B', '1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '3-C', '4-A', '4-B']
     .map(name => ({ schoolId: 'nazmi', name })),
   ...['Anaokulu 3 Yaş', 'Anaokulu 4 Yaş', 'Anaokulu 5 Yaş', '1-A', '2-A', '3-A', '4-A', '4-B']
     .map(name => ({ schoolId: 'atagen', name }))
@@ -15,7 +15,7 @@ const firstNames = [
   'Alin', 'Atlas', 'Duru', 'Emir', 'İpek', 'Kerem', 'Lara', 'Mete', 'Nehir', 'Rüzgar'
 ];
 const surnames = ['Yılmaz', 'Demir', 'Kaya', 'Aydın', 'Şahin', 'Arslan', 'Çelik', 'Koç', 'Aksoy', 'Yalçın'];
-const legacyNazmiIds = { 'Anaokulu 3 Yaş': 'ana3', 'Anaokulu 4 Yaş': 'ana4', 'Anaokulu 5 Yaş': 'ana5', '1-A': '1a', '1-B': '1b' };
+const legacyNazmiIds = { 'Anaokulu 3 Yaş': 'ana3', 'Anaokulu 4 Yaş': 'ana4', 'Anaokulu 5 Yaş A': 'ana5', '1-A': '1a', '1-B': '1b' };
 const slug = name => name.toLocaleLowerCase('tr').replaceAll('ı', 'i').replaceAll('ş', 's').replaceAll('ğ', 'g').replaceAll('ü', 'u').replaceAll('ö', 'o').replaceAll('ç', 'c').replace(/[^a-z0-9]+/g, '');
 
 const classes = definitions.map((item, classIndex) => ({

@@ -70,6 +70,8 @@ async function initialize(db, env = process.env) {
     sql: 'UPDATE students SET classId=? WHERE classId=?',
     args: [c.id, c.legacyId]
   })));
+  const nazmiFiveA = classes.find(c => c.schoolId === 'nazmi' && c.name === 'Anaokulu 5 Yaş A');
+  if (nazmiFiveA) await db.run('UPDATE students SET classId=? WHERE classId=?', nazmiFiveA.id, 'nazmi-anaokulu5yas');
   await db.run("UPDATE records SET type='MTSS Öğrenci Takip Formu' WHERE kind='rubric'");
   await db.run("INSERT OR IGNORE INTO interviews(id,kind,format,status,date,time,participant,subject,note,createdBy,createdAt) SELECT id,kind,'individual','completed',date,'',participant,subject,note,'',createdAt FROM meetings");
   await db.run('INSERT OR IGNORE INTO interview_students(interviewId,studentId,isPrimary) SELECT id,studentId,1 FROM meetings');
@@ -83,9 +85,9 @@ async function initialize(db, env = process.env) {
     // Safe if several cold starts initialize the database concurrently.
     await db.run('INSERT OR IGNORE INTO accounts VALUES(?,?,?)', profile.username, salt, hash);
   }
-  await db.batch(classes.flatMap((c, ci) => c.students.map((name, i) => ({
+  await db.batch(classes.flatMap(c => c.students.map((name, i) => ({
     sql: 'INSERT OR IGNORE INTO students VALUES(?,?,?,?,?,?,?)',
-    args: [`${c.legacyId || c.id}-${i}`, c.id, name, `${2026 - (ci < 3 ? ci + 3 : 6)}-${String((i % 8) + 1).padStart(2, '0')}-${String(i + 5).padStart(2, '0')}`, 'Belirtilmedi', '', '']
+    args: [`${c.legacyId || c.id}-${i}`, c.id, name, `${2026 - (Number(c.name.match(/^Anaokulu (\d)/)?.[1]) || 6)}-${String((i % 8) + 1).padStart(2, '0')}-${String(i + 5).padStart(2, '0')}`, 'Belirtilmedi', '', '']
   }))));
   return db;
 }

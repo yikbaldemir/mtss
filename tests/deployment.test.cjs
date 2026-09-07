@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { Readable } = require('node:stream');
@@ -34,6 +35,21 @@ test('The separate parent portal publishes no MTSS application assets', () => {
   assert.ok(html.includes('Veli Bilgi Formu'));
   assert.ok(!html.includes('MTSS'));
   assert.ok(!fs.readFileSync(path.join(portal, 'public/app.js'), 'utf8').includes('/api/login'));
+});
+
+test('Existing Nazmi five-year-old students migrate to class A', async () => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'mtss-five-year-migration-'));
+  const { createDatabase, initialize } = require('../server/database.cjs');
+  const db = createDatabase({ DATA_DIR: folder });
+  try {
+    await initialize(db, { DATA_DIR: folder });
+    await db.run('UPDATE students SET classId=? WHERE id=?', 'nazmi-anaokulu5yas', 'ana5-0');
+    await initialize(db, { DATA_DIR: folder });
+    assert.equal((await db.get('SELECT classId FROM students WHERE id=?', 'ana5-0')).classId, 'nazmi-anaokulu5yasa');
+  } finally {
+    db.close();
+    fs.rmSync(folder, { recursive: true, force: true });
+  }
 });
 
 test('Vercel never silently falls back to temporary SQLite storage', () => {
