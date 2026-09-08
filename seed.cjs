@@ -22,11 +22,22 @@ const nazmiClassTeachers = {
   '4-B': 'Fadime Karataş'
 };
 
+const atagenClassTeachers = {
+  'Anaokulu 3 Yaş': 'Yaren Palalıoğlu',
+  'Anaokulu 4 Yaş': 'Rabia Akgül',
+  'Anaokulu 5 Yaş': 'Hazal Durgut',
+  '1-A': 'Şahinde Köksal',
+  '2-A': 'Rozerin Furan',
+  '3-A': 'Mehtap Duyan',
+  '4-A': 'Hamit Sarı',
+  '4-B': 'Zeynep Betül Şimşek'
+};
+
 const definitions = [
   ...['Anaokulu 3 Yaş', 'Anaokulu 4 Yaş', 'Anaokulu 5 Yaş A', 'Anaokulu 5 Yaş B', '1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '3-C', '4-A', '4-B']
     .map(name => ({ schoolId: 'nazmi', name, teacher: nazmiClassTeachers[name] })),
   ...['Anaokulu 3 Yaş', 'Anaokulu 4 Yaş', 'Anaokulu 5 Yaş', '1-A', '2-A', '3-A', '4-A', '4-B']
-    .map(name => ({ schoolId: 'atagen', name }))
+    .map(name => ({ schoolId: 'atagen', name, teacher: atagenClassTeachers[name] }))
 ];
 
 const firstNames = [
@@ -63,11 +74,27 @@ const editorTeachers = [
 ];
 const atagenTeachers = [
   ...editorTeachers,
-  'Ayşe Kaya',
-  'Burcu Demir',
-  'Emre Yıldız',
-  'Merve Çelik',
-  'Selin Arslan'
+  'Mehtap Duyan',
+  'Hamit Sarı',
+  'Şahinde Köksal',
+  'Zeynep Betül Şimşek',
+  'Rozerin Furan',
+  'Rabia Akgül',
+  'Hazal Durgut',
+  'Yaren Palalıoğlu',
+  'Büşra Önder',
+  'Melisa Yıldırım',
+  'Cihat Karadeniz',
+  'Mazi Babi',
+  'Merve Akdağ',
+  'Hande Karaca',
+  'Irmak Sel',
+  'Aleyna Suberk',
+  'Büşra Sezen Kaya',
+  'Keziban Zeynep Saltık',
+  'Beyza Es',
+  'Özgür Emil',
+  'Onur Ayar'
 ];
 const nazmiTeachers = [
   ...editorTeachers,
@@ -99,9 +126,9 @@ const nazmiTeachers = [
   'Muhteşem Merve Eraslan',
   'Seda Şallıel',
   'Filiz Gülen',
-  'Din Kültürü Öğretmeni',
-  'Özgür — Buz Pateni',
-  'Beyza — Yüzme'
+  'Eda Aktaş',
+  'Özgür Emil',
+  'Beyza Es'
 ];
 const teachersBySchool = { nazmi: nazmiTeachers, atagen: atagenTeachers };
 const teachersForSchool = schoolId => teachersBySchool[schoolId] || [];
