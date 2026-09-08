@@ -66,7 +66,7 @@ async function initialize(db, env = process.env) {
     'CREATE INDEX IF NOT EXISTS weekly_meetings_school_date ON weekly_meetings(schoolId,date)',
     'CREATE INDEX IF NOT EXISTS interviews_date ON interviews(date)'
   ]);
-  const demoStudentIds = classes.filter(c => c.schoolId === 'nazmi').flatMap(c => Array.from({ length: 10 }, (_, index) => `${c.legacyId || c.id}-${index}`));
+  const demoStudentIds = classes.flatMap(c => Array.from({ length: 10 }, (_, index) => c.schoolId === 'nazmi' ? `${c.legacyId || c.id}-${index}` : `${c.id}-${index}`));
   const demoPlaceholders = demoStudentIds.map(() => '?').join(',');
   const demoInterviewRows = await db.all(`SELECT DISTINCT interviewId FROM interview_students WHERE studentId IN (${demoPlaceholders})`, ...demoStudentIds);
   const demoInterviewIds = demoInterviewRows.map(row => row.interviewId);
@@ -102,7 +102,7 @@ async function initialize(db, env = process.env) {
   }
   await db.batch(classes.flatMap(c => c.students.map((name, i) => ({
     sql: 'INSERT OR IGNORE INTO students VALUES(?,?,?,?,?,?,?)',
-    args: [c.studentIds[i], c.id, name, c.schoolId === 'nazmi' ? '' : `${2026 - (Number(c.name.match(/^Anaokulu (\d)/)?.[1]) || 6)}-${String((i % 8) + 1).padStart(2, '0')}-${String(i + 5).padStart(2, '0')}`, 'Belirtilmedi', '', '']
+    args: [c.studentIds[i], c.id, name, '', 'Belirtilmedi', '', '']
   }))));
   return db;
 }

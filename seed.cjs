@@ -1,5 +1,6 @@
 const crypto = require('node:crypto');
 const { nazmiRoster } = require('./nazmi-roster.cjs');
+const { atagenRoster } = require('./atagen-roster.cjs');
 
 const schools = [
   { id: 'nazmi', name: 'Kağıthane Nazmi Arıkan Fen Bilimleri İlkokulu' },
@@ -40,21 +41,13 @@ const definitions = [
     .map(name => ({ schoolId: 'atagen', name, teacher: atagenClassTeachers[name] }))
 ];
 
-const firstNames = [
-  'Ada', 'Aras', 'Defne', 'Ege', 'Lina', 'Mert', 'Mira', 'Poyraz', 'Selin', 'Uras',
-  'Alin', 'Atlas', 'Duru', 'Emir', 'İpek', 'Kerem', 'Lara', 'Mete', 'Nehir', 'Rüzgar'
-];
-const surnames = ['Yılmaz', 'Demir', 'Kaya', 'Aydın', 'Şahin', 'Arslan', 'Çelik', 'Koç', 'Aksoy', 'Yalçın'];
 const legacyNazmiIds = { 'Anaokulu 3 Yaş': 'ana3', 'Anaokulu 4 Yaş': 'ana4', 'Anaokulu 5 Yaş A': 'ana5', '1-A': '1a', '1-B': '1b' };
 const slug = name => name.toLocaleLowerCase('tr').replaceAll('ı', 'i').replaceAll('ş', 's').replaceAll('ğ', 'g').replaceAll('ü', 'u').replaceAll('ö', 'o').replaceAll('ç', 'c').replace(/[^a-z0-9]+/g, '');
 
-const classes = definitions.map((item, classIndex) => {
+const classes = definitions.map(item => {
   const id = `${item.schoolId}-${slug(item.name)}`;
   const legacyId = item.schoolId === 'nazmi' ? legacyNazmiIds[item.name] : undefined;
-  const students = item.schoolId === 'nazmi' ? nazmiRoster[item.name] : Array.from({ length: 10 }, (_, studentIndex) => {
-    const index = classIndex * 10 + studentIndex;
-    return `${firstNames[index % firstNames.length]} ${surnames[Math.floor(index / firstNames.length) % surnames.length]}`;
-  });
+  const students = item.schoolId === 'nazmi' ? nazmiRoster[item.name] : atagenRoster[item.name];
   return {
     id,
     schoolId: item.schoolId,
@@ -62,7 +55,7 @@ const classes = definitions.map((item, classIndex) => {
     teacher: item.teacher || '',
     legacyId,
     students,
-    studentIds: students.map((name, index) => item.schoolId === 'nazmi' ? `nazmi-${crypto.createHash('sha256').update(`${id}\0${name}`).digest('hex').slice(0, 16)}` : `${legacyId || id}-${index}`)
+    studentIds: students.map(name => `${item.schoolId}-${crypto.createHash('sha256').update(`${id}\0${name}`).digest('hex').slice(0, 16)}`)
   };
 });
 

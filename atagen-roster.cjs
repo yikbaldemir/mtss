@@ -1,0 +1,112 @@
+const atagenRoster = {
+  'Anaokulu 3 Yaş': [
+    'ADEN DURU AĞCA',
+    'ATA OR',
+    'ALİ EGE GÜNDOĞDU',
+    'EMİR DURSUN',
+    'ZEYNEP SERRA ÇAKTI'
+  ],
+  'Anaokulu 4 Yaş': [
+    'AZRA ÖZTÜRK',
+    'ÇAĞAN ALİ SOĞLA',
+    'EFLİN DURGUT',
+    'ELİF ARYA EROĞLU',
+    'GÖKÇE GÜLTEKİN',
+    'GÖKTUĞ AYDIN',
+    'LEYLA ÇALIK',
+    'MUAZ ONUR ASLAN',
+    'URAZ ALP KADER',
+    'MEVA KAR'
+  ],
+  'Anaokulu 5 Yaş': [
+    'ALİN LİNA GÜLER',
+    'ALP ARAS KÜÇÜK',
+    'ARYA FİDAN',
+    'ASLI YILMAZ',
+    'BERRA KARAKAYA',
+    'EYMEN AYDEMİR',
+    'LİNA MERAL',
+    'NİL AĞAN',
+    'UMAY PERA YAMAÇ',
+    'ÜLKÜ DEFNE YILMAZ',
+    'ZAIN EHAB AHMAD MASOUD'
+  ],
+  '1-A': [
+    'ALİHAN OSMAN KURT',
+    'AREL ERTAN',
+    'ATA AYDOĞAN',
+    'BATUHAN DENİZ KIRILMAZ',
+    'DENA KAZEMİ',
+    'DERİN SU ŞENTÜRK',
+    'ELMAN HASANLOEI',
+    'İDİL MİLA İLHAN',
+    'KARAN AKTAŞ',
+    'SUDE KARTAL',
+    'TOPRAK BÜNYAMİN YAMAN',
+    'VENUS AKHAVANSADEGHI',
+    'SAMADİAN AROUSHA'
+  ],
+  '2-A': [
+    'ALAN ÇİÇEK',
+    'BÜŞRA SALTIK',
+    'DEFNE DEMİR',
+    'ELİF MİLA KOCATAŞ',
+    'HANZADE MİLA TEKİN',
+    'KAAN ÇAKMAK',
+    'KEREM DEMİRCİ',
+    'LIANA ESMAEILI',
+    'OZAN ERDEM KOÇ',
+    'UĞUR DENİZ KIZGIR',
+    'YAVUZ ATLAS DEMİR GEZER',
+    'YİĞİT HAMZA ÇOBANBAŞI'
+  ],
+  '3-A': [
+    'DEMİR ASAF KAYAPUNAR',
+    'DENİZ KAAN AYDIN',
+    'DOĞA GÜL',
+    'İNCİ CEYLİN FIRTIN',
+    'KUZEY YILDIZ',
+    'LİNA BİRCE EKER',
+    'MARVİN SALMAN',
+    'MELİNA YELESER',
+    'NEHİR DAYDAŞ',
+    'YAĞMUR YÖRUKUL',
+    'EBRAR MİNA AKGÜL'
+  ],
+  '4-A': [
+    'ALYA DİRİCE',
+    'ASLI DİNDAR',
+    'BERAT ERAY ÇAĞLAV',
+    'DEFNE TÜNAY',
+    'DENİZ MECİT',
+    'EFE GÜNAY',
+    'ELİF AYSEL OR',
+    'EYLÜL DENİZ KAYABAŞ',
+    'HALİS DEMİR KILIÇ',
+    'HAYAT KAYA',
+    'MİLA NAZ AVCI',
+    'ÖZGÜR ŞEN',
+    'ŞEVVAL KAR',
+    'YAĞIZ ASAF KARAKUŞ',
+    'ZEYNEP ERÇEVİK'
+  ],
+  '4-B': [
+    'ASLAN ALİ SOYLU',
+    'AZRA TANEM AKTAŞ',
+    'DEFNE AKER',
+    'DENİZ BEYAZ',
+    'DERİN ELİF SÜLÜN',
+    'EGEMEN AYDEMİR',
+    'ERTUĞRUL TAHAR SALTIK',
+    'FURKAN URAS ERTÜRK',
+    'HAMZA TOPRAK KOCAMAN',
+    'MELİSA ALKAN',
+    'NEHİR BERRAK ŞENTÜRK',
+    'RABİA CUM',
+    'URAZ KUTAY RAMAZAN',
+    'ZELİŞ GÖKÇE CANDAN',
+    'ALİ HAKKI'
+  ]
+};
+
+module.exports = { atagenRoster };
