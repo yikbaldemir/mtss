@@ -100,10 +100,10 @@ async function initialize(db, env = process.env) {
     // Safe if several cold starts initialize the database concurrently.
     await db.run('INSERT OR IGNORE INTO accounts VALUES(?,?,?)', profile.username, salt, hash);
   }
-  await db.batch(classes.flatMap(c => c.students.map((name, i) => ({
-    sql: 'INSERT OR IGNORE INTO students VALUES(?,?,?,?,?,?,?)',
-    args: [c.studentIds[i], c.id, name, '', 'Belirtilmedi', '', '']
-  }))));
+  await db.batch(classes.flatMap(c => c.students.flatMap((name, i) => [
+    { sql: 'INSERT OR IGNORE INTO students VALUES(?,?,?,?,?,?,?)', args: [c.studentIds[i], c.id, name, '', 'Belirtilmedi', '', ''] },
+    { sql: 'UPDATE students SET classId=? WHERE id=?', args: [c.id, c.studentIds[i]] }
+  ])));
   return db;
 }
 

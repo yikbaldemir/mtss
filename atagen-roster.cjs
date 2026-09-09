@@ -4,7 +4,8 @@ const atagenRoster = {
     'ATA OR',
     'ALİ EGE GÜNDOĞDU',
     'EMİR DURSUN',
-    'ZEYNEP SERRA ÇAKTI'
+    'ZEYNEP SERRA ÇAKTI',
+    'LEYLA TOKUŞ'
   ],
   'Anaokulu 4 Yaş': [
     'AZRA ÖZTÜRK',
@@ -14,6 +15,7 @@ const atagenRoster = {
     'GÖKÇE GÜLTEKİN',
     'GÖKTUĞ AYDIN',
     'LEYLA ÇALIK',
+    'NİL AĞAN',
     'MUAZ ONUR ASLAN',
     'URAZ ALP KADER',
     'MEVA KAR'
@@ -26,7 +28,7 @@ const atagenRoster = {
     'BERRA KARAKAYA',
     'EYMEN AYDEMİR',
     'LİNA MERAL',
-    'NİL AĞAN',
+    'OĞUZHAN KONCA',
     'UMAY PERA YAMAÇ',
     'ÜLKÜ DEFNE YILMAZ',
     'ZAIN EHAB AHMAD MASOUD'
