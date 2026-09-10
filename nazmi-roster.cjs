@@ -60,7 +60,8 @@ const nazmiRoster = {
     "ALPARSLAN YAŞAR",
     "CİHANGİR HASAN SARGIN",
     "MARTIN OSMAN BOYRAZ",
-    "BEYAZIT ŞİMŞEK"
+    "BEYAZIT ŞİMŞEK",
+    "LİYA YILMAZ"
   ],
   "1-B": [
     "CAN ÇAKI",
