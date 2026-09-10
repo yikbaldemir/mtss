@@ -34,7 +34,8 @@ const nazmiRoster = {
     "NİL ÜSTÜNGÜN",
     "ALİ MENTEŞOĞLU",
     "UZAY GÜNEŞ",
-    "TUĞKAN ÇAĞIN ÇETİN"
+    "TUĞKAN ÇAĞIN ÇETİN",
+    "GİRAY DORUK ONGUN"
   ],
   "Anaokulu 5 Yaş B": [
     "ENİF HUZMELİ",

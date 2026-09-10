@@ -72,8 +72,8 @@ test('Old demo students and their records are replaced by the real rosters', asy
     const movedNil = await db.get('SELECT id,classId FROM students WHERE id=?', nil.id);
     assert.equal(movedNil.id, nil.id); assert.equal(movedNil.classId, 'atagen-anaokulu4yas');
     assert.equal((await db.get('SELECT COUNT(*) AS count FROM records WHERE id=? AND studentId=?', 'nil-existing-record', nil.id)).count, 1);
-    assert.equal((await db.get('SELECT COUNT(*) AS count FROM students')).count, 309);
-    assert.equal((await db.get('SELECT COUNT(*) AS count FROM students WHERE classId=?', 'nazmi-anaokulu5yasa')).count, 10);
+    assert.equal((await db.get('SELECT COUNT(*) AS count FROM students')).count, 310);
+    assert.equal((await db.get('SELECT COUNT(*) AS count FROM students WHERE classId=?', 'nazmi-anaokulu5yasa')).count, 11);
     assert.equal((await db.get('SELECT COUNT(*) AS count FROM students WHERE classId LIKE ? AND birthDate<>?', 'nazmi-%', '')).count, 0);
     assert.equal((await db.get('SELECT COUNT(*) AS count FROM students WHERE classId LIKE ? AND birthDate<>?', 'atagen-%', '')).count, 0);
   } finally {
