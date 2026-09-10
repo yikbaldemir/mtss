@@ -22,7 +22,7 @@ function safeFilename(record) {
 function recordPdf({ record, school, className, rubricCriteria, rubricScale }) {
   return new Promise((resolve, reject) => {
     const title = record.kind === 'rubric' ? 'MTSS Öğrenci Takip Formu' : record.kind === 'parent' ? 'Veli Bilgi Formu' : 'Gözlem Formu';
-    const doc = new PDFDocument({ size: 'A4', margins: { top: 46, right: 48, bottom: 54, left: 48 }, bufferPages: true, info: { Title: `${title} - ${record.student}`, Author: 'MTSS' } });
+    const doc = new PDFDocument({ size: 'A4', font: regularFont, margins: { top: 46, right: 48, bottom: 54, left: 48 }, bufferPages: true, info: { Title: `${title} - ${record.student}`, Author: 'MTSS' } });
     const chunks = [];
     doc.on('data', chunk => chunks.push(chunk));
     doc.on('error', reject);

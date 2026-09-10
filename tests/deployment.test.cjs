@@ -11,6 +11,7 @@ test('PDF fonts are embedded for serverless deployments', () => {
   const source = fs.readFileSync(path.join(root, 'server', 'pdf.cjs'), 'utf8');
   assert.match(source, /pdfmake\/build\/vfs_fonts\.js/);
   assert.doesNotMatch(source, /require\.resolve\([^)]*\.ttf/);
+  assert.match(source, /new PDFDocument\(\{ size: 'A4', font: regularFont,/);
 });
 
 test('Vercel function imports without a DOM, database configuration, or listener', () => {
@@ -24,6 +25,8 @@ test('Only public assets are published and API rewrites preserve the requested p
   const config = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json')));
   assert.equal(config.framework, null);
   assert.equal(config.outputDirectory, 'public');
+  assert.match(config.functions['api/index.mjs'].includeFiles, /node_modules\/pdfkit\/\*\*/);
+  assert.match(config.functions['api/index.mjs'].includeFiles, /node_modules\/fontkit\/\*\*/);
   assert.deepEqual(fs.readdirSync(path.join(root, 'public')).sort(), ['app.js', 'index.html', 'veli-formu.html', 'veli-formu.js']);
   assert.equal(config.rewrites.find(r => r.source === '/api/:path*').destination, '/api/index?route=:path*');
   assert.equal(config.rewrites.find(r => r.source === '/veli-formu').destination, '/veli-formu.html');
