@@ -6,7 +6,11 @@ const nazmiRoster = {
     "KARYA ÇETİNKAYA",
     "YAĞIZ EFE MUSLU",
     "MİRAÇ ASLAN KEKEÇ",
-    "UMAY ARVEN AKGÜL"
+    "UMAY ARVEN AKGÜL",
+    "BERRAK DENİZ KESKİN",
+    "DOĞA MORKOÇOĞLU",
+    "EYLÜL NEVA DEREBAŞI",
+    "MELİS COŞKUN"
   ],
   "Anaokulu 4 Yaş": [
     "UYGAR ALP ÜÇER",
