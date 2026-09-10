@@ -42,7 +42,9 @@ const nazmiRoster = {
     "DURU ACAR",
     "İDİL ERBİLGİN",
     "LALİN ECE POLAT",
-    "ELVİN MİLA TAKU"
+    "ELVİN MİLA TAKU",
+    "KARAN BERK BARDA",
+    "EDA ÇETİN"
   ],
   "1-A": [
     "ALİ BARAN EKMEN",
