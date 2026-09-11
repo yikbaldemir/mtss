@@ -22,7 +22,8 @@ const nazmiRoster = {
     "ECEM SULTAN ALBAYRAK",
     "ÖYKÜ LAÇİN",
     "ATLAS ALİ KELEŞ",
-    "ÇİĞDEM EMEK KÜTÜK"
+    "ÇİĞDEM EMEK KÜTÜK",
+    "ASLAN OĞUZ"
   ],
   "Anaokulu 5 Yaş A": [
     "ARYA ARYAYILDIZLI",
